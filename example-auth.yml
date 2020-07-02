@@ -1,0 +1,8 @@
+---
+
+# Example auth config, for now this is specific to azure event hub's kafka settings, hope to make
+# more generic soon
+broker_list:
+  - "<changeme>.servicebus.windows.net:9093"
+sasl_user: "$ConnectionString"
+sasl_password: "Endpoint=sb://<changeme>.servicebus.windows.net/;SharedAccessKeyName=<changeme>;SharedAccessKey=<changme>"

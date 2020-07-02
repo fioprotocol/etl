@@ -1,0 +1,36 @@
+version: '3.0'
+services:
+
+  chronicle:
+    build: dist/chronicle
+    volumes:
+      - type: volume
+          source: chronicle-data
+          target: /opt/data
+    environment:
+      - DATA_DIR=./data
+      - MODE=scan
+      - HOST=<**your history node here**> #ip address or hostname of nodeos with state-history plogin
+      - PORT=8080 #port number of state history plugin
+      - WS_HOST=fioetl
+      - WS_PORT=8844
+      - SKIP_BLOCK_EVENTS=false
+      - SKIP_TABLE_DELTAS=false
+      - SKIP_TRACES=false
+      - BIN_HEADER=false
+      - EXP_WS_PATH=/chronicle
+      - EXP_WS_MAX_QEUEU=10000
+      - IRREVERSIBLE_ONLY=true
+    stop_grace_period: 1m30s
+    restart: always
+
+  fioetl:
+    build: .
+    expose:
+      - "8844"
+    stop_grace_period: 1m30s
+    restart: always
+
+
+volumes:
+  chronicle-data:
