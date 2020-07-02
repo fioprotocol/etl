@@ -5,12 +5,10 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"github.com/Shopify/sarama"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"time"
 )
@@ -75,7 +73,6 @@ type pChan struct {
 func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowChan chan []byte,
 	miscChan chan []byte, sentChan chan uint32, errs chan error) {
 
-	var highest uint32
 	var pause bool
 	send := func(payload []byte, channel string, producer sarama.AsyncProducer) {
 		b := bytes.NewBuffer(nil)
@@ -92,15 +89,15 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 			//Key:   sarama.StringEncoder(strconv.Itoa(id)),
 			Value: sarama.ByteEncoder(b.Bytes()),
 		}
-		// this is memory intensive, 10% chance we will check:
-		if rand.Intn(10)+1 % 10 == 0 {
-			bn := &postProcessing{}
-			_ = json.Unmarshal(payload, bn)
-			if bn.BlockNum > highest {
-				highest = bn.BlockNum
-				sentChan <- bn.BlockNum
-			}
-		}
+		//// this is memory intensive, 10% chance we will check:
+		//if rand.Intn(10)+1 % 10 == 0 {
+		//	bn := &postProcessing{}
+		//	_ = json.Unmarshal(payload, bn)
+		//	if bn.BlockNum > highest {
+		//		highest = bn.BlockNum
+		//		sentChan <- bn.BlockNum
+		//	}
+		//}
 	}
 
 	publisher := func(c chan pChan) {

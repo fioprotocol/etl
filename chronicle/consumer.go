@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -146,6 +147,7 @@ func (c *Consumer) consume() error {
 	var t int
 	var d []byte
 	var e error
+	var fin transform.BlockFinished
 	go func() {
 		for {
 			t, d, e = c.ws.ReadMessage()
@@ -169,7 +171,16 @@ func (c *Consumer) consume() error {
 			size += uint64(len(d))
 			_ = c.ws.SetReadDeadline(time.Now().Add(time.Minute))
 			switch s.Msgtype {
-			case "ENCODER_ERROR", "BLOCK_COMPLETED", "RCVR_PAUSE", "FORK":
+			case "BLOCK_COMPLETED":
+				err = json.Unmarshal(d, &fin)
+				if err == nil && fin.Data.BlockNum != "" {
+					var fb int
+					fb, err = strconv.Atoi(fin.Data.BlockNum)
+					if err == nil {
+						c.Sent = uint32(fb)
+					}
+				}
+			case "ENCODER_ERROR", "RCVR_PAUSE", "FORK":
 				continue
 			case "TBL_ROW":
 				go func(d []byte) {
@@ -191,6 +202,9 @@ func (c *Consumer) consume() error {
 					}
 					if sum != nil {
 						c.blockChan <- sum
+					}
+					if c.Seen == 0 {
+
 					}
 				}(d)
 			case "PERMISSION", "PERMISSION_LINK", "ACC_METADATA":

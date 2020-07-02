@@ -32,6 +32,7 @@ type ProducerSchedule struct {
 	Producers []eos.ProducerKey `json:"producers"`
 }
 
+
 // FullBlock duplicates eos.SignedBlock because the provided json has metadata
 type FullBlock struct {
 	RecordType string `json:"record_type"`
@@ -210,5 +211,11 @@ func Account(b []byte, kind string) (trace json.RawMessage, err error) {
 	au.BlockNum, _ = strconv.ParseUint(au.BlockNum.(string), 10, 32)
 	au.Data = msg.Data
 	return json.Marshal(au)
+}
+
+type BlockFinished struct {
+	Data struct {
+		BlockNum string `json:"block_num"`
+	} `json:"data"`
 }
 
