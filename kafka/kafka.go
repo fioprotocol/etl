@@ -86,21 +86,12 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 
 		producer.Input() <- &sarama.ProducerMessage{
 			Topic: channel,
-			//Key:   sarama.StringEncoder(strconv.Itoa(id)),
 			Value: sarama.ByteEncoder(b.Bytes()),
 		}
-		//// this is memory intensive, 10% chance we will check:
-		//if rand.Intn(10)+1 % 10 == 0 {
-		//	bn := &postProcessing{}
-		//	_ = json.Unmarshal(payload, bn)
-		//	if bn.BlockNum > highest {
-		//		highest = bn.BlockNum
-		//		sentChan <- bn.BlockNum
-		//	}
-		//}
+		b = nil
 	}
 
-	publisher := func(c chan pChan) {
+	publisher := func(c chan *pChan) {
 		producer, err := sarama.NewAsyncProducer(brokerList, getConfig())
 		if err != nil {
 			errs <- err
@@ -112,7 +103,7 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 				errs <- err
 			}
 		}()
-		var msg pChan
+		var msg *pChan
 		for {
 			select {
 			case <-ctx.Done():
@@ -122,12 +113,13 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 					time.Sleep(100 * time.Millisecond)
 				}
 				send(msg.payload, msg.topic, producer)
+				msg = nil
 			}
 		}
 	}
-	c := make([]chan pChan, 4)
+	c := make([]chan *pChan, 4)
 	for i := 0; i < 4; i++ {
-		c[i] = make(chan pChan)
+		c[i] = make(chan *pChan)
 		go publisher(c[i])
 	}
 
@@ -137,25 +129,29 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		case <-ctx.Done():
 			return
 		case r = <-rowChan:
-			c[0] <- pChan{
+			c[0] <- &pChan{
 				payload: r,
 				topic: "row",
 			}
+			r = nil
 		case header = <-headerChan:
-			c[1] <- pChan{
+			c[1] <- &pChan{
 				payload: header,
 				topic: "block",
 			}
+			header = nil
 		case tx = <-txChan:
-			c[2] <- pChan{
+			c[2] <- &pChan{
 				payload: tx,
 				topic: "tx",
 			}
+			tx = nil
 		case account = <-miscChan:
-			c[3] <- pChan{
+			c[3] <- &pChan{
 				payload: account,
 				topic: "misc",
 			}
+			account = nil
 		}
 	}
 }

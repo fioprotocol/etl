@@ -232,6 +232,7 @@ func (c *Consumer) consume() error {
 					c.txChan <- t
 				}(d)
 			}
+			d = nil
 		}
 	}()
 
