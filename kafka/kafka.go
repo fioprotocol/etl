@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 )
@@ -91,11 +92,14 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 			//Key:   sarama.StringEncoder(strconv.Itoa(id)),
 			Value: sarama.ByteEncoder(b.Bytes()),
 		}
-		bn := &postProcessing{}
-		_ = json.Unmarshal(payload, bn)
-		if bn.BlockNum > highest {
-			highest = bn.BlockNum
-			sentChan <- bn.BlockNum
+		// this is memory intensive, 10% chance we will check:
+		if rand.Intn(10)+1 % 10 == 0 {
+			bn := &postProcessing{}
+			_ = json.Unmarshal(payload, bn)
+			if bn.BlockNum > highest {
+				highest = bn.BlockNum
+				sentChan <- bn.BlockNum
+			}
 		}
 	}
 
@@ -111,11 +115,12 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 				errs <- err
 			}
 		}()
+		var msg pChan
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case msg := <-c:
+			case msg = <-c:
 				for pause {
 					time.Sleep(100 * time.Millisecond)
 				}
@@ -129,26 +134,27 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		go publisher(c[i])
 	}
 
+	var r, header, tx, account []byte
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case r := <-rowChan:
+		case r = <-rowChan:
 			c[0] <- pChan{
 				payload: r,
 				topic: "row",
 			}
-		case header := <-headerChan:
+		case header = <-headerChan:
 			c[1] <- pChan{
 				payload: header,
 				topic: "block",
 			}
-		case tx := <-txChan:
+		case tx = <-txChan:
 			c[2] <- pChan{
 				payload: tx,
 				topic: "tx",
 			}
-		case account := <-miscChan:
+		case account = <-miscChan:
 			c[3] <- pChan{
 				payload: account,
 				topic: "misc",

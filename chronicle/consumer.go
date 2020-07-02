@@ -95,6 +95,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		connected = false
 	}()
 	var upgrader = websocket.Upgrader{
+		ReadBufferSize: 8192,
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
@@ -109,8 +110,10 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		e := <-c.errs
 		c.cancel()
-		time.Sleep(time.Second)
-		log.Fatal(e)
+		log.Println("delaying 30s exit on err to allow rate limiting to cool off")
+		log.Println(e)
+		time.Sleep(30 * time.Second)
+		os.Exit(1)
 	}()
 
 	go kafka.Setup(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.sent, c.errs)
@@ -137,12 +140,15 @@ func (c *Consumer) consume() error {
 	}()
 	alive := time.NewTicker(time.Minute)
 	exit := make(chan interface{}, 1)
-	types := make(map[string]int)
+	//types := make(map[string]int)
 	p := message.NewPrinter(language.AmericanEnglish)
 	var size uint64
+	var t int
+	var d []byte
+	var e error
 	go func() {
 		for {
-			t, d, e := c.ws.ReadMessage()
+			t, d, e = c.ws.ReadMessage()
 			if e != nil {
 				log.Println(e)
 				_ = c.ws.Close()
@@ -159,7 +165,7 @@ func (c *Consumer) consume() error {
 				log.Println(err)
 				continue
 			}
-			types[s.Msgtype] += 1
+			//types[s.Msgtype] += 1
 			size += uint64(len(d))
 			_ = c.ws.SetReadDeadline(time.Now().Add(time.Minute))
 			switch s.Msgtype {
@@ -172,7 +178,7 @@ func (c *Consumer) consume() error {
 						log.Println("process row:", e)
 						return
 					}
-					c.rowChan <-out
+					c.rowChan <- out
 				}(d)
 			case "BLOCK":
 				go func(data []byte) {
@@ -181,10 +187,10 @@ func (c *Consumer) consume() error {
 						log.Println(e)
 					}
 					if h != nil {
-						c.blockChan <-h
+						c.blockChan <- h
 					}
 					if sum != nil {
-						c.blockChan <-sum
+						c.blockChan <- sum
 					}
 				}(d)
 			case "PERMISSION", "PERMISSION_LINK", "ACC_METADATA":
@@ -193,7 +199,7 @@ func (c *Consumer) consume() error {
 					if e != nil || a == nil {
 						return
 					}
-					c.miscChan <-a
+					c.miscChan <- a
 				}(d, s)
 			case "ABI_UPD":
 				// we'll want this one to block for abi updates:
@@ -209,23 +215,22 @@ func (c *Consumer) consume() error {
 					if e != nil || t == nil {
 						return
 					}
-					c.txChan <-t
+					c.txChan <- t
 				}(d)
 			}
-
 		}
 	}()
 
 	go func() {
 		for {
-			time.Sleep(5*time.Second)
+			time.Sleep(5 * time.Second)
 			log.Println(p.Sprintf("Block: %d, processed %d MiB", c.Seen, size/1024/1024))
 		}
 	}()
 	go func() {
 		var err error
 		for {
-			time.Sleep(500*time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			if c.Sent > c.Seen {
 				c.Seen = c.Sent
 				err = c.ack()
@@ -238,7 +243,7 @@ func (c *Consumer) consume() error {
 
 	for {
 		select {
-		case <- c.ctx.Done():
+		case <-c.ctx.Done():
 			return nil
 		case <-exit:
 			return nil

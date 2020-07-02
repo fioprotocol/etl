@@ -3,6 +3,8 @@ package chronicle
 import "log"
 
 func init()  {
-	log.SetPrefix("fioetl   |    ")
+	// a little excessive, but sorta lines up with chronicle which is useful when watching both logs
+	log.SetPrefix("                                   fioetl              ]")
 	log.SetFlags(log.Lshortfile|log.LstdFlags|log.Lmsgprefix)
 }
+
