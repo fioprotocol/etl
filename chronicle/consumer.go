@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -145,7 +146,7 @@ func (c *Consumer) consume() error {
 	p := message.NewPrinter(language.AmericanEnglish)
 	var size uint64
 	var t int
-	var d []byte
+	var a, b, d []byte
 	var e error
 	var fin transform.BlockFinished
 	go func() {
@@ -162,54 +163,53 @@ func (c *Consumer) consume() error {
 			}
 			c.last = time.Now()
 			s := &msgSummary{}
-			err := json.Unmarshal(d, s)
-			if err != nil {
-				log.Println(err)
+			e = json.Unmarshal(d, s)
+			if e != nil {
+				log.Println(e)
 				continue
 			}
-			//types[s.Msgtype] += 1
 			size += uint64(len(d))
 			_ = c.ws.SetReadDeadline(time.Now().Add(time.Minute))
 			switch s.Msgtype {
-			case "BLOCK_COMPLETED":
-				err = json.Unmarshal(d, &fin)
-				if err == nil && fin.Data.BlockNum != "" {
-					var fb int
-					fb, err = strconv.Atoi(fin.Data.BlockNum)
-					if err == nil {
-						c.Sent = uint32(fb)
-					}
-				}
 			case "ENCODER_ERROR", "RCVR_PAUSE", "FORK":
 				continue
 			case "TBL_ROW":
 				go func(d []byte) {
-					out, e := transform.Table(d)
+					a, e = transform.Table(d)
 					if e != nil {
 						log.Println("process row:", e)
 						return
 					}
-					c.rowChan <- out
+					c.rowChan <- a
 				}(d)
 			case "BLOCK":
 				go func(data []byte) {
-					h, sum, e := transform.Block(data)
+					a, b, e = transform.Block(data)
 					if e != nil {
 						log.Println(e)
 					}
-					if h != nil {
-						c.blockChan <- h
+					if a != nil {
+						c.blockChan <- a
 					}
-					if sum != nil {
-						c.blockChan <- sum
+					if b != nil {
+						c.blockChan <- b
 					}
 					if c.Seen == 0 {
 
 					}
 				}(d)
+			case "BLOCK_COMPLETED":
+				e = json.Unmarshal(d, &fin)
+				if e == nil && fin.Data.BlockNum != "" {
+					var fb int
+					fb, e = strconv.Atoi(fin.Data.BlockNum)
+					if e == nil {
+						c.Sent = uint32(fb)
+					}
+				}
 			case "PERMISSION", "PERMISSION_LINK", "ACC_METADATA":
 				go func(data []byte, s *msgSummary) {
-					a, e := transform.Account(data, s.Msgtype)
+					a, e = transform.Account(data, s.Msgtype)
 					if e != nil || a == nil {
 						return
 					}
@@ -217,19 +217,19 @@ func (c *Consumer) consume() error {
 				}(d, s)
 			case "ABI_UPD":
 				// we'll want this one to block for abi updates:
-				a, err := transform.Abi(d)
-				if err != nil {
-					log.Println(err)
+				a, e = transform.Abi(d)
+				if e != nil {
+					log.Println(e)
 					continue
 				}
 				c.miscChan <- a
 			case "TX_TRACE":
 				go func(data []byte) {
-					t, e := transform.Trace(data)
-					if e != nil || t == nil {
+					a, e = transform.Trace(data)
+					if e != nil || a == nil {
 						return
 					}
-					c.txChan <- t
+					c.txChan <- a
 				}(d)
 			}
 			d = nil
@@ -244,6 +244,7 @@ func (c *Consumer) consume() error {
 	}()
 	go func() {
 		var err error
+		var lastGc uint32
 		for {
 			time.Sleep(500 * time.Millisecond)
 			if c.Sent > c.Seen {
@@ -252,6 +253,11 @@ func (c *Consumer) consume() error {
 				if err != nil {
 					log.Println(err)
 				}
+			}
+			// kindly request a little housekeeping every 100k or so
+			if c.Sent - lastGc > 100_000 {
+				lastGc = c.Sent
+				runtime.GC()
 			}
 		}
 	}()
