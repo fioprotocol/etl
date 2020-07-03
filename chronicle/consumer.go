@@ -162,6 +162,10 @@ func (c *Consumer) consume() error {
 			if stopped {
 				return
 			}
+			for currentMsgs > 16384 {
+				log.Println("paused.")
+				time.Sleep(2*time.Second)
+			}
 			t, d, e = c.ws.ReadMessage()
 			if e != nil {
 				log.Println(e)
@@ -188,20 +192,20 @@ func (c *Consumer) consume() error {
 				c.wg.Add(1)
 				go func(d []byte) {
 					counterChan <- 1
-					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, e = transform.Table(d)
 					if e != nil {
 						log.Println("process row:", e)
+						counterChan <- -1
 						return
 					}
 					c.rowChan <- a
+					counterChan <- -1
 				}(d)
 			case "BLOCK":
 				c.wg.Add(1)
 				go func(data []byte) {
 					counterChan <- 1
-					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, b, e = transform.Block(data)
 					if e != nil {
@@ -213,6 +217,7 @@ func (c *Consumer) consume() error {
 					if b != nil {
 						c.blockChan <- b
 					}
+					counterChan <- -1
 				}(d)
 			case "BLOCK_COMPLETED":
 				e = json.Unmarshal(d, &fin)
@@ -227,13 +232,14 @@ func (c *Consumer) consume() error {
 				c.wg.Add(1)
 				go func(data []byte, s *msgSummary) {
 					counterChan <- 1
-					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, e = transform.Account(data, s.Msgtype)
 					if e != nil || a == nil {
+						counterChan <- -1
 						return
 					}
 					c.miscChan <- a
+					counterChan <- -1
 				}(d, s)
 			case "ABI_UPD":
 				// we'll want this one to block for abi updates:
@@ -247,13 +253,14 @@ func (c *Consumer) consume() error {
 				c.wg.Add(1)
 				go func(data []byte) {
 					counterChan <- 1
-					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, e = transform.Trace(data)
 					if e != nil || a == nil {
+						counterChan <- -1
 						return
 					}
 					c.txChan <- a
+					counterChan <- -1
 				}(d)
 			}
 			d = nil
@@ -268,8 +275,8 @@ func (c *Consumer) consume() error {
 				return
 			case <-t.C:
 				time.Sleep(5 * time.Second)
-				log.Println(p.Sprintf("Block: %d, processed %d MiB", c.Seen, size/1024/1024))
-				log.Printf("                   %d   routines actively processing messages", currentMsgs)
+				log.Println(p.Sprintf("                        Block: %d, processed %d MiB", c.Seen, size/1024/1024))
+				log.Println(p.Sprintf("                               %d   routines actively processing messages", currentMsgs))
 			}
 		}
 	}()

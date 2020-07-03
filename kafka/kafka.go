@@ -135,32 +135,39 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 			}
 		}
 	}
-	iwg.Add(4)
-	c := make([]chan *pChan, 4)
-	for i := 0; i < 4; i++ {
-		c[i] = make(chan *pChan)
-		go publisher(c[i])
+	const workers int = 4
+	iwg.Add(workers)
+	//c := make([]chan *pChan, workers)
+	c := make(chan *pChan)
+	for i := 0; i < workers; i++ {
+		//c[i] = make(chan *pChan)
+		//go publisher(c[i])
+		go publisher(c)
 	}
 
 	for {
 		select {
 		case r := <-rowChan:
-			c[0] <- &pChan{
+			//c[0] <- &pChan{
+			c <- &pChan{
 				payload: r,
 				topic: "row",
 			}
 		case header := <-headerChan:
-			c[1] <- &pChan{
+			//c[1] <- &pChan{
+			c <- &pChan{
 				payload: header,
 				topic: "block",
 			}
 		case tx := <-txChan:
-			c[2] <- &pChan{
+			//c[2] <- &pChan{
+			c <- &pChan{
 				payload: tx,
 				topic: "tx",
 			}
 		case account := <-miscChan:
-			c[3] <- &pChan{
+			//c[3] <- &pChan{
+			c <- &pChan{
 				payload: account,
 				topic: "misc",
 			}
