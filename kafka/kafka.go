@@ -72,7 +72,7 @@ type pChan struct {
 }
 
 func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowChan chan []byte,
-	miscChan chan []byte, errs chan error, wg *sync.WaitGroup) {
+	miscChan chan []byte, errs chan error, done chan interface{}) {
 
 	var pause bool
 	iwg := sync.WaitGroup{}
@@ -167,7 +167,7 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		case <-ctx.Done():
 			iwg.Wait()
 			log.Println("kafka workers exited")
-			wg.Done()
+			close(done)
 			return
 		}
 	}

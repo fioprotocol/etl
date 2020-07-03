@@ -119,7 +119,13 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	c.wg.Add(1)
-	go kafka.Setup(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.errs, &c.wg)
+	kDone := make(chan interface{})
+	go kafka.Setup(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.errs, kDone)
+	go func() {
+		<-kDone
+		c.wg.Done()
+		return
+	}()
 	err = c.consume()
 	if err != nil {
 		log.Println(err)
