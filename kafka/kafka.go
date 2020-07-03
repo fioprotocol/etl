@@ -98,6 +98,7 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 	}
 
 	publisher := func(c chan *pChan) {
+		defer iwg.Done()
 		producer, err := sarama.NewAsyncProducer(brokerList, getConfig())
 		if err != nil {
 			errs <- err
@@ -105,16 +106,20 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		}
 		defer producer.Close()
 		go func() {
-			for err := range producer.Errors() {
-				errs <- err
-				return
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case err := <-producer.Errors():
+					errs <- err
+					return
+				}
 			}
 		}()
 		var msg *pChan
 		for {
 			select {
 			case <-ctx.Done():
-				iwg.Done()
 				return
 			case msg = <-c:
 				for pause {

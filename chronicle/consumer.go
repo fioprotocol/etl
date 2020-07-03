@@ -143,8 +143,6 @@ func (c *Consumer) consume() error {
 	var fin transform.BlockFinished
 	var stopped bool
 	go func() {
-		c.wg.Add(1)
-		defer c.wg.Done()
 		for {
 			if stopped {
 				return
@@ -252,8 +250,6 @@ func (c *Consumer) consume() error {
 		}
 	}()
 	go func() {
-		c.wg.Add(1)
-		defer c.wg.Done()
 		var err error
 		t := time.NewTicker(500*time.Millisecond)
 		for {
@@ -278,18 +274,19 @@ func (c *Consumer) consume() error {
 		}
 	}()
 
+	var finalErr error
 	for {
 		select {
 		case <-c.ctx.Done():
+			stopped = true
 			c.wg.Wait()
 			runtime.GC()
-			return nil
+			return finalErr
 		case <-alive.C:
 			if c.last.Before(time.Now().Add(-1 * time.Minute)) {
 				_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
 				c.cancel()
-				c.wg.Wait()
-				return errors.New("no data for > 1 minute, closing")
+				finalErr = errors.New("no data for > 1 minute, closing")
 			}
 		}
 	}
