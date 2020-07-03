@@ -38,11 +38,11 @@ type Consumer struct {
 	ws   *websocket.Conn
 	last time.Time
 	mux  sync.Mutex
+	wg   sync.WaitGroup
 
 	ctx       context.Context
 	cancel    func()
 	errs      chan error
-	sent      chan uint32
 	miscChan  chan []byte
 	blockChan chan []byte
 	txChan    chan []byte
@@ -77,11 +77,10 @@ func NewConsumer(file string) *Consumer {
 	}
 	consumer.ctx, consumer.cancel = context.WithCancel(context.Background())
 	consumer.errs = make(chan error)
-	consumer.sent = make(chan uint32)
-	consumer.txChan = make(chan []byte)
-	consumer.rowChan = make(chan []byte)
-	consumer.miscChan = make(chan []byte)
-	consumer.blockChan = make(chan []byte)
+	consumer.txChan = make(chan []byte, 512)
+	consumer.rowChan = make(chan []byte, 512)
+	consumer.miscChan = make(chan []byte, 512)
+	consumer.blockChan = make(chan []byte, 512)
 	consumer.fileName = file
 	return consumer
 }
@@ -108,6 +107,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		c.err()
 		return
 	}
+	defer c.ws.Close()
 	log.Println("connected")
 	go func() {
 		e := <-c.errs
@@ -118,7 +118,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1)
 	}()
 
-	go kafka.Setup(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.sent, c.errs)
+	go kafka.Setup(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.errs, &c.wg)
 	err = c.consume()
 	if err != nil {
 		log.Println(err)
@@ -134,28 +134,26 @@ type msgSummary struct {
 }
 
 func (c *Consumer) consume() error {
-	go func() {
-		// track highest successfully sent, never ack higher.
-		for {
-			c.Sent = <-c.sent
-		}
-	}()
 	alive := time.NewTicker(time.Minute)
-	exit := make(chan interface{}, 1)
-	//types := make(map[string]int)
 	p := message.NewPrinter(language.AmericanEnglish)
 	var size uint64
 	var t int
 	var a, b, d []byte
 	var e error
 	var fin transform.BlockFinished
+	var stopped bool
 	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
 		for {
+			if stopped {
+				return
+			}
 			t, d, e = c.ws.ReadMessage()
 			if e != nil {
 				log.Println(e)
 				_ = c.ws.Close()
-				close(exit)
+				c.cancel()
 				return
 			}
 			if t != websocket.BinaryMessage {
@@ -175,6 +173,8 @@ func (c *Consumer) consume() error {
 				continue
 			case "TBL_ROW":
 				go func(d []byte) {
+					c.wg.Add(1)
+					defer c.wg.Done()
 					a, e = transform.Table(d)
 					if e != nil {
 						log.Println("process row:", e)
@@ -184,6 +184,8 @@ func (c *Consumer) consume() error {
 				}(d)
 			case "BLOCK":
 				go func(data []byte) {
+					c.wg.Add(1)
+					defer c.wg.Done()
 					a, b, e = transform.Block(data)
 					if e != nil {
 						log.Println(e)
@@ -193,9 +195,6 @@ func (c *Consumer) consume() error {
 					}
 					if b != nil {
 						c.blockChan <- b
-					}
-					if c.Seen == 0 {
-
 					}
 				}(d)
 			case "BLOCK_COMPLETED":
@@ -209,6 +208,8 @@ func (c *Consumer) consume() error {
 				}
 			case "PERMISSION", "PERMISSION_LINK", "ACC_METADATA":
 				go func(data []byte, s *msgSummary) {
+					c.wg.Add(1)
+					defer c.wg.Done()
 					a, e = transform.Account(data, s.Msgtype)
 					if e != nil || a == nil {
 						return
@@ -225,6 +226,8 @@ func (c *Consumer) consume() error {
 				c.miscChan <- a
 			case "TX_TRACE":
 				go func(data []byte) {
+					c.wg.Add(1)
+					defer c.wg.Done()
 					a, e = transform.Trace(data)
 					if e != nil || a == nil {
 						return
@@ -237,27 +240,43 @@ func (c *Consumer) consume() error {
 	}()
 
 	go func() {
+		t := time.NewTicker(5*time.Second)
 		for {
-			time.Sleep(5 * time.Second)
-			log.Println(p.Sprintf("Block: %d, processed %d MiB", c.Seen, size/1024/1024))
+			select {
+			case <-t.C:
+				time.Sleep(5 * time.Second)
+				log.Println(p.Sprintf("Block: %d, processed %d MiB", c.Seen, size/1024/1024))
+			case <-c.ctx.Done():
+				return
+			}
 		}
 	}()
 	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
 		var err error
-		var lastGc uint32
+		var thisSession uint32
+		t := time.NewTicker(500*time.Millisecond)
 		for {
-			time.Sleep(500 * time.Millisecond)
-			if c.Sent > c.Seen {
-				c.Seen = c.Sent
-				err = c.ack()
-				if err != nil {
-					log.Println(err)
+			select {
+			case <-t.C:
+				if c.Sent > c.Seen {
+					c.Seen = c.Sent
+					err = c.ack()
+					if err != nil {
+						log.Println(err)
+					}
+					thisSession += 1
 				}
-			}
-			// kindly request a little housekeeping every 100k or so
-			if c.Sent - lastGc > 100_000 {
-				lastGc = c.Sent
-				runtime.GC()
+				// close our session and kindly request a little housekeeping every 100k or so
+				if thisSession > 100_000 {
+					stopped = true
+					c.cancel()
+					runtime.GC()
+					return
+				}
+			case <-c.ctx.Done():
+				return
 			}
 		}
 	}()
@@ -265,12 +284,13 @@ func (c *Consumer) consume() error {
 	for {
 		select {
 		case <-c.ctx.Done():
-			return nil
-		case <-exit:
+			c.wg.Wait()
 			return nil
 		case <-alive.C:
 			if c.last.Before(time.Now().Add(-1 * time.Minute)) {
 				_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
+				c.cancel()
+				c.wg.Wait()
 				return errors.New("no data for > 1 minute, closing")
 			}
 		}

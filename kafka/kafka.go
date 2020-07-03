@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -71,9 +72,11 @@ type pChan struct {
 }
 
 func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowChan chan []byte,
-	miscChan chan []byte, sentChan chan uint32, errs chan error) {
+	miscChan chan []byte, errs chan error, wg *sync.WaitGroup) {
+	wg.Add(1)
 
 	var pause bool
+	iwg := sync.WaitGroup{}
 	send := func(payload []byte, channel string, producer sarama.AsyncProducer) {
 		b := bytes.NewBuffer(nil)
 		gz := gzip.NewWriter(b)
@@ -101,12 +104,14 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		go func() {
 			for err := range producer.Errors() {
 				errs <- err
+				return
 			}
 		}()
 		var msg *pChan
 		for {
 			select {
 			case <-ctx.Done():
+				iwg.Done()
 				return
 			case msg = <-c:
 				for pause {
@@ -120,14 +125,13 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 	c := make([]chan *pChan, 4)
 	for i := 0; i < 4; i++ {
 		c[i] = make(chan *pChan)
+		iwg.Add(1)
 		go publisher(c[i])
 	}
 
 	var r, header, tx, account []byte
 	for {
 		select {
-		case <-ctx.Done():
-			return
 		case r = <-rowChan:
 			c[0] <- &pChan{
 				payload: r,
@@ -152,6 +156,10 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 				topic: "misc",
 			}
 			account = nil
+		case <-ctx.Done():
+			iwg.Wait()
+			wg.Done()
+			return
 		}
 	}
 }

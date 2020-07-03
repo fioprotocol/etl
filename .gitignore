@@ -2,5 +2,5 @@ docker-compose.yml
 .idea
 local*
 auth*.yml
-./fioetl
+fioetl
 
