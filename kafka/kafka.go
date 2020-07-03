@@ -76,18 +76,13 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 
 	var pause bool
 	iwg := sync.WaitGroup{}
-	send := func(payload []byte, channel string, producer sarama.AsyncProducer) {
-		if payload == nil || producer == nil {
+	send := func(pc *pChan, producer sarama.AsyncProducer) {
+		if pc.payload == nil || producer == nil {
 			return
 		}
-		l := len(payload)
 		b := bytes.NewBuffer(nil)
 		gz := gzip.NewWriter(b)
-		if l != len(payload) {
-			log.Println("payload size changed during processing, this is weird and shouldn't happen")
-			return
-		}
-		_, err := gz.Write(payload)
+		_, err := gz.Write(pc.payload)
 		if err != nil {
 			log.Println(err)
 			return
@@ -95,10 +90,9 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		_ = gz.Close()
 
 		producer.Input() <- &sarama.ProducerMessage{
-			Topic: channel,
+			Topic: pc.topic,
 			Value: sarama.ByteEncoder(b.Bytes()),
 		}
-		b = nil
 	}
 
 	publisher := func(c chan *pChan) {
@@ -112,12 +106,12 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		go func() {
 			for {
 				select {
-				case <-ctx.Done():
-					return
 				case err := <-producer.Errors():
 					if err != nil {
 						errs <- err
 					}
+					return
+				case <-ctx.Done():
 					return
 				}
 			}
@@ -131,46 +125,48 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 				for pause {
 					time.Sleep(100 * time.Millisecond)
 				}
-				send(msg.payload, msg.topic, producer)
+				send(msg, producer)
 			}
 		}
 	}
 	const workers int = 4
 	iwg.Add(workers)
-	//c := make([]chan *pChan, workers)
 	c := make(chan *pChan)
 	for i := 0; i < workers; i++ {
-		//c[i] = make(chan *pChan)
-		//go publisher(c[i])
 		go publisher(c)
 	}
 
 	for {
 		select {
 		case r := <-rowChan:
-			//c[0] <- &pChan{
-			c <- &pChan{
-				payload: r,
-				topic: "row",
-			}
+			// use a closure to dereference
+			func(d []byte){
+				c <- &pChan{
+					payload: d,
+					topic: "row",
+				}
+			}(r)
 		case header := <-headerChan:
-			//c[1] <- &pChan{
-			c <- &pChan{
-				payload: header,
-				topic: "block",
-			}
+			func(d []byte){
+				c <- &pChan{
+					payload: d,
+					topic: "block",
+				}
+			}(header)
 		case tx := <-txChan:
-			//c[2] <- &pChan{
-			c <- &pChan{
-				payload: tx,
-				topic: "tx",
-			}
+			func(d []byte){
+				c <- &pChan{
+					payload: d,
+					topic: "tx",
+				}
+			}(tx)
 		case account := <-miscChan:
-			//c[3] <- &pChan{
-			c <- &pChan{
-				payload: account,
-				topic: "misc",
-			}
+			func(d []byte){
+				c <- &pChan{
+					payload: d,
+					topic: "misc",
+				}
+			}(account)
 		case <-ctx.Done():
 			iwg.Wait()
 			log.Println("kafka workers exited")
