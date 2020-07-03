@@ -73,7 +73,6 @@ type pChan struct {
 
 func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowChan chan []byte,
 	miscChan chan []byte, errs chan error, wg *sync.WaitGroup) {
-	wg.Add(1)
 
 	var pause bool
 	iwg := sync.WaitGroup{}
@@ -133,10 +132,10 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 			}
 		}
 	}
+	iwg.Add(4)
 	c := make([]chan *pChan, 4)
 	for i := 0; i < 4; i++ {
 		c[i] = make(chan *pChan)
-		iwg.Add(1)
 		go publisher(c[i])
 	}
 

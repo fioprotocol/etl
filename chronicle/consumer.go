@@ -118,6 +118,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1)
 	}()
 
+	c.wg.Add(1)
 	go kafka.Setup(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.errs, &c.wg)
 	err = c.consume()
 	if err != nil {
@@ -170,8 +171,8 @@ func (c *Consumer) consume() error {
 			case "ENCODER_ERROR", "RCVR_PAUSE", "FORK":
 				continue
 			case "TBL_ROW":
+				c.wg.Add(1)
 				go func(d []byte) {
-					c.wg.Add(1)
 					defer c.wg.Done()
 					a, e = transform.Table(d)
 					if e != nil {
@@ -181,8 +182,8 @@ func (c *Consumer) consume() error {
 					c.rowChan <- a
 				}(d)
 			case "BLOCK":
+				c.wg.Add(1)
 				go func(data []byte) {
-					c.wg.Add(1)
 					defer c.wg.Done()
 					a, b, e = transform.Block(data)
 					if e != nil {
@@ -205,8 +206,8 @@ func (c *Consumer) consume() error {
 					}
 				}
 			case "PERMISSION", "PERMISSION_LINK", "ACC_METADATA":
+				c.wg.Add(1)
 				go func(data []byte, s *msgSummary) {
-					c.wg.Add(1)
 					defer c.wg.Done()
 					a, e = transform.Account(data, s.Msgtype)
 					if e != nil || a == nil {
@@ -223,8 +224,8 @@ func (c *Consumer) consume() error {
 				}
 				c.miscChan <- a
 			case "TX_TRACE":
+				c.wg.Add(1)
 				go func(data []byte) {
-					c.wg.Add(1)
 					defer c.wg.Done()
 					a, e = transform.Trace(data)
 					if e != nil || a == nil {
