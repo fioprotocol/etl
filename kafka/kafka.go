@@ -77,11 +77,16 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 	var pause bool
 	iwg := sync.WaitGroup{}
 	send := func(payload []byte, channel string, producer sarama.AsyncProducer) {
-		if payload == nil {
+		if payload == nil || producer == nil {
 			return
 		}
+		l := len(payload)
 		b := bytes.NewBuffer(nil)
 		gz := gzip.NewWriter(b)
+		if l != len(payload) {
+			log.Println("payload size changed during processing, this is weird and shouldn't happen")
+			return
+		}
 		_, err := gz.Write(payload)
 		if err != nil {
 			log.Println(err)
@@ -117,13 +122,12 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 				}
 			}
 		}()
-		var msg *pChan
 		for {
 			select {
 			case <-ctx.Done():
 				log.Println("kafka producer exiting")
 				return
-			case msg = <-c:
+			case msg := <-c:
 				for pause {
 					time.Sleep(100 * time.Millisecond)
 				}
