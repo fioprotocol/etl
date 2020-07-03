@@ -149,6 +149,14 @@ func (c *Consumer) consume() error {
 	var e error
 	var fin transform.BlockFinished
 	var stopped bool
+	// deleteme debug:
+	var currentMsgs int
+	counterChan := make(chan int)
+	go func() {
+		for {
+			currentMsgs += <-counterChan
+		}
+	}()
 	go func() {
 		for {
 			if stopped {
@@ -179,6 +187,8 @@ func (c *Consumer) consume() error {
 			case "TBL_ROW":
 				c.wg.Add(1)
 				go func(d []byte) {
+					counterChan <- 1
+					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, e = transform.Table(d)
 					if e != nil {
@@ -190,6 +200,8 @@ func (c *Consumer) consume() error {
 			case "BLOCK":
 				c.wg.Add(1)
 				go func(data []byte) {
+					counterChan <- 1
+					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, b, e = transform.Block(data)
 					if e != nil {
@@ -214,6 +226,8 @@ func (c *Consumer) consume() error {
 			case "PERMISSION", "PERMISSION_LINK", "ACC_METADATA":
 				c.wg.Add(1)
 				go func(data []byte, s *msgSummary) {
+					counterChan <- 1
+					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, e = transform.Account(data, s.Msgtype)
 					if e != nil || a == nil {
@@ -232,6 +246,8 @@ func (c *Consumer) consume() error {
 			case "TX_TRACE":
 				c.wg.Add(1)
 				go func(data []byte) {
+					counterChan <- 1
+					defer func() {counterChan <- -1}()
 					defer c.wg.Done()
 					a, e = transform.Trace(data)
 					if e != nil || a == nil {
@@ -248,11 +264,12 @@ func (c *Consumer) consume() error {
 		t := time.NewTicker(5*time.Second)
 		for {
 			select {
+			case <-c.ctx.Done():
+				return
 			case <-t.C:
 				time.Sleep(5 * time.Second)
 				log.Println(p.Sprintf("Block: %d, processed %d MiB", c.Seen, size/1024/1024))
-			case <-c.ctx.Done():
-				return
+				log.Printf("                   %d   routines actively processing messages", currentMsgs)
 			}
 		}
 	}()
@@ -261,6 +278,8 @@ func (c *Consumer) consume() error {
 		t := time.NewTicker(500*time.Millisecond)
 		for {
 			select {
+			case <-c.ctx.Done():
+				return
 			case <-t.C:
 				if c.Sent > c.Seen {
 					c.Seen = c.Sent
@@ -276,8 +295,6 @@ func (c *Consumer) consume() error {
 					c.cancel()
 					return
 				}
-			case <-c.ctx.Done():
-				return
 			}
 		}
 	}()
