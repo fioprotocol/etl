@@ -264,6 +264,7 @@ func (c *Consumer) consume() error {
 				}
 				// close our session and kindly request a little housekeeping every 500mb or so
 				if size/1024/1024 > 512 {
+					log.Println("requesting restart to clean memory")
 					stopped = true
 					c.cancel()
 					return
@@ -279,8 +280,11 @@ func (c *Consumer) consume() error {
 		select {
 		case <-c.ctx.Done():
 			stopped = true
+			log.Println("consumer cleaning up")
 			c.wg.Wait()
+			log.Println("consumer exiting")
 			runtime.GC()
+			_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
 			return finalErr
 		case <-alive.C:
 			if c.last.Before(time.Now().Add(-1 * time.Minute)) {

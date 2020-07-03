@@ -104,14 +104,16 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 			errs <- err
 			return
 		}
-		defer producer.Close()
+		defer producer.AsyncClose()
 		go func() {
 			for {
 				select {
 				case <-ctx.Done():
 					return
 				case err := <-producer.Errors():
-					errs <- err
+					if err != nil {
+						errs <- err
+					}
 					return
 				}
 			}
@@ -120,6 +122,7 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		for {
 			select {
 			case <-ctx.Done():
+				log.Println("kafka producer exiting")
 				return
 			case msg = <-c:
 				for pause {
@@ -166,6 +169,7 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 			account = nil
 		case <-ctx.Done():
 			iwg.Wait()
+			log.Println("kafka workers exited")
 			wg.Done()
 			return
 		}
