@@ -77,10 +77,10 @@ func NewConsumer(file string) *Consumer {
 	}
 	consumer.ctx, consumer.cancel = context.WithCancel(context.Background())
 	consumer.errs = make(chan error)
-	consumer.txChan = make(chan []byte, 512)
-	consumer.rowChan = make(chan []byte, 512)
-	consumer.miscChan = make(chan []byte, 512)
-	consumer.blockChan = make(chan []byte, 512)
+	consumer.txChan = make(chan []byte)
+	consumer.rowChan = make(chan []byte)
+	consumer.miscChan = make(chan []byte)
+	consumer.blockChan = make(chan []byte)
 	consumer.fileName = file
 	return consumer
 }

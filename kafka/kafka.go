@@ -142,33 +142,28 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 		go publisher(c[i])
 	}
 
-	var r, header, tx, account []byte
 	for {
 		select {
-		case r = <-rowChan:
+		case r := <-rowChan:
 			c[0] <- &pChan{
 				payload: r,
 				topic: "row",
 			}
-			r = nil
-		case header = <-headerChan:
+		case header := <-headerChan:
 			c[1] <- &pChan{
 				payload: header,
 				topic: "block",
 			}
-			header = nil
-		case tx = <-txChan:
+		case tx := <-txChan:
 			c[2] <- &pChan{
 				payload: tx,
 				topic: "tx",
 			}
-			tx = nil
-		case account = <-miscChan:
+		case account := <-miscChan:
 			c[3] <- &pChan{
 				payload: account,
 				topic: "misc",
 			}
-			account = nil
 		case <-ctx.Done():
 			iwg.Wait()
 			log.Println("kafka workers exited")
