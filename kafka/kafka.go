@@ -128,7 +128,6 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 					time.Sleep(100 * time.Millisecond)
 				}
 				send(msg.payload, msg.topic, producer)
-				msg = nil
 			}
 		}
 	}
