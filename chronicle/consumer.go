@@ -255,7 +255,6 @@ func (c *Consumer) consume() error {
 		c.wg.Add(1)
 		defer c.wg.Done()
 		var err error
-		var thisSession uint32
 		t := time.NewTicker(500*time.Millisecond)
 		for {
 			select {
@@ -266,13 +265,11 @@ func (c *Consumer) consume() error {
 					if err != nil {
 						log.Println(err)
 					}
-					thisSession += 1
 				}
-				// close our session and kindly request a little housekeeping every 100k or so
-				if thisSession > 100_000 {
+				// close our session and kindly request a little housekeeping every 500mb or so
+				if size/1024/1024 > 512 {
 					stopped = true
 					c.cancel()
-					runtime.GC()
 					return
 				}
 			case <-c.ctx.Done():
@@ -285,6 +282,7 @@ func (c *Consumer) consume() error {
 		select {
 		case <-c.ctx.Done():
 			c.wg.Wait()
+			runtime.GC()
 			return nil
 		case <-alive.C:
 			if c.last.Before(time.Now().Add(-1 * time.Minute)) {

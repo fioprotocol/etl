@@ -78,6 +78,9 @@ func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowC
 	var pause bool
 	iwg := sync.WaitGroup{}
 	send := func(payload []byte, channel string, producer sarama.AsyncProducer) {
+		if payload == nil {
+			return
+		}
 		b := bytes.NewBuffer(nil)
 		gz := gzip.NewWriter(b)
 		_, err := gz.Write(payload)
