@@ -120,7 +120,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 
 	c.wg.Add(1)
 	kDone := make(chan interface{})
-	go kafka.Setup(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.errs, kDone)
+	go kafka.StartProducers(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.errs, kDone)
 	go func() {
 		<-kDone
 		c.wg.Done()
@@ -152,11 +152,24 @@ func (c *Consumer) consume() error {
 	// deleteme debug:
 	var currentMsgs int
 	counterChan := make(chan int)
+
+	waitForQueue := func() {
+		log.Println("waiting up to 180s for queue to empty")
+		go func() {
+			time.Sleep(180*time.Second)
+			c.cancel()
+		}()
+		for currentMsgs > 0 {
+			time.Sleep(100*time.Millisecond)
+		}
+	}
+
 	go func() {
 		for {
 			currentMsgs += <-counterChan
 		}
 	}()
+	
 	go func() {
 		for {
 			if stopped {
@@ -170,6 +183,7 @@ func (c *Consumer) consume() error {
 			if e != nil {
 				log.Println(e)
 				_ = c.ws.Close()
+				waitForQueue()
 				c.cancel()
 				return
 			}
@@ -296,16 +310,17 @@ func (c *Consumer) consume() error {
 					}
 				}
 				// close our session and kindly request a little housekeeping every 500mb or so
-				if size/1024/1024 > 512 {
-					log.Println("requesting restart to clean memory")
-					stopped = true
-					c.cancel()
-					return
-				}
+				//if size/1024/1024 > 512 {
+				//	log.Println("requesting restart to clean memory")
+				//	stopped = true
+				//	c.cancel()
+				//	return
+				//}
 			}
 		}
 	}()
 
+	memStats := &runtime.MemStats{}
 	var finalErr error
 	for {
 		select {
@@ -318,10 +333,22 @@ func (c *Consumer) consume() error {
 			_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
 			return finalErr
 		case <-alive.C:
-			if c.last.Before(time.Now().Add(-1 * time.Minute)) {
+			// check if we aren't getting messages
+			if c.last.Before(time.Now().Add(-1 * time.Minute)) && currentMsgs == 0 {
 				_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
+				waitForQueue()
 				c.cancel()
 				finalErr = errors.New("no data for > 1 minute, closing")
+			}
+			// if we are taking more than 4gb of RAM, we should probably restart.
+			runtime.ReadMemStats(memStats)
+			if memStats.HeapInuse > 4 * 1024 * 1024 * 1024 {
+				stopped = true
+				log.Println("Exceeded 4gb heap, clearing existing queue")
+				waitForQueue()
+				log.Println("cleared queue, restarting.")
+				c.cancel()
+				_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
 			}
 		}
 	}

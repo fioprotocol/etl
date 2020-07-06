@@ -71,7 +71,7 @@ type pChan struct {
 	topic   string
 }
 
-func Setup(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowChan chan []byte,
+func StartProducers(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowChan chan []byte,
 	miscChan chan []byte, errs chan error, done chan interface{}) {
 
 	var pause bool
