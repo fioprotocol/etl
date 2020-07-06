@@ -317,26 +317,20 @@ func (c *Consumer) consume() error {
 	}()
 
 	go func() {
-		t := time.NewTicker(5*time.Second)
+		printStat := time.NewTicker(5*time.Second)
+		t := time.NewTicker(500*time.Millisecond)
+		var err error
 		for {
 			select {
 			case <-c.ctx.Done():
 				return
-			case <-t.C:
+			case <-printStat.C:
 				log.Println(p.Sprintf("                        Block: %d, processed %d MiB", c.Seen, size/1024/1024))
 				log.Println(p.Sprintf("                               %d   routines actively processing messages", currentMsgs))
 			case s := <-sizes:
 				size += s
 			case m := <-counterChan:
 				currentMsgs += m
-			}
-		}
-	}()
-	go func() {
-		var err error
-		t := time.NewTicker(500*time.Millisecond)
-		for {
-			select {
 			case <-c.ctx.Done():
 				return
 			case <-t.C:
