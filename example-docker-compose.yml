@@ -25,14 +25,16 @@ services:
     restart: always
 
   fioetl-producer:
-    build: .
-    dockerfile: Dockerfile-producer
+    build:
+      context: .
+      dockerfile: Dockerfile-publisher
     stop_grace_period: 1m30s
     restart: always
 
   fioetl:
-    build: .
-    dockerfile: Dockerfile-consumer
+    build:
+      context: .
+      dockerfile: Dockerfile-consumer
     expose:
       - "8844"
     stop_grace_period: 1m30s

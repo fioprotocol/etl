@@ -6,7 +6,7 @@ RUN apt-get update; apt-get -y install ca-certificates
 COPY . /go/src/github.com/fioprotocol/fio.etl
 WORKDIR /go/src/github.com/fioprotocol/fio.etl
 
-RUN go build -ldflags "-s -w" -o /producer cmd/fioetl-producer/main.go
+RUN go build -ldflags "-s -w" -o /publisher cmd/fioetl-publisher/main.go
 
 
 ### just a source for SSL libraries, golang:latest has a lot installed.
@@ -17,7 +17,7 @@ RUN apt-get update; apt-get -y upgrade && apt-get install -y ca-certificates
 
 ### try to build a lighter container
 FROM scratch
-COPY --from=builder /producer /producer
+COPY --from=builder /publisher /publisher
 COPY auth.yml /
 # this gets libssl1.1, openssl, and libc6 which we need for TLS, not tiny, but saves about 1 GiB in final image size
 COPY --from=ssl /etc/ca-certificates /etc/ca-certificates
@@ -28,5 +28,5 @@ COPY --from=ssl /lib /lib
 COPY --from=ssl /lib64 /lib64
 
 USER 65535
-CMD ["/producer"]
+CMD ["/publisher"]
 
