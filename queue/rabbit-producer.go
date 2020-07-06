@@ -16,6 +16,13 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, qu
 		return false
 	}
 
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("panic in ", channel, r)
+			close(quit)
+		}
+	}()
+
 	conn, err := amqp.Dial("amqp://guest:guest@rabbit:5672/")
 	if exitOn(err) {
 		return
@@ -46,6 +53,9 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, qu
 			close(quit)
 			return
 		case d := <-messages:
+			if d == nil || len(d) == 0 {
+				continue
+			}
 			err = ch.Publish(
 				"",
 				q.Name,
