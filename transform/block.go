@@ -11,6 +11,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -69,14 +70,18 @@ type BlockHeader struct {
 	ScheduleVersion  interface{}                    `json:"schedule_version"`
 	NewProducers     *ProducerSchedule `json:"new_producers" eos:"optional"`
 	HeaderExtensions []*Extension              `json:"header_extensions"`
+	sync.Mutex
 }
 
 func (b *BlockHeader) BlockNumber() uint32 {
-
+	b.Lock()
+	defer b.Unlock()
 	return binary.BigEndian.Uint32(b.Previous[:4]) + 1
 }
 
 func (b *BlockHeader) BlockID() (string, error) {
+	b.Lock()
+	defer b.Unlock()
 	confirmed, _ := strconv.ParseUint(b.Confirmed.(string), 10, 16)
 	b.Confirmed = uint16(confirmed)
 	sv, _ := strconv.ParseUint(b.ScheduleVersion.(string), 10, 32)

@@ -39,6 +39,9 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 	}
 	defer ch.Close()
 
+
+	ack := ch.NotifyPublish(make(chan amqp.Confirmation))
+
 	q, err := ch.QueueDeclare(
 		channel,
 		true,
@@ -75,6 +78,12 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			if exitOn(err) {
 				return
 			}
+			a := <-ack
+			if !a.Ack {
+				errs <- errors.New(channel+" failed to send message to queue")
+				close(quit)
+				return
+		}
 			mux.Unlock()
 		}
 	}

@@ -1,12 +1,12 @@
-version: '3.0'
+version: '3.8'
 services:
 
   chronicle:
     build: dist/chronicle
     volumes:
       - type: volume
-          source: chronicle-data
-          target: /opt/data
+        source: chronicle-data
+        target: /opt/data
     environment:
       - DATA_DIR=./data
       - MODE=scan
@@ -23,6 +23,8 @@ services:
       - IRREVERSIBLE_ONLY=true
     stop_grace_period: 1m30s
     restart: always
+    depends_on:
+      - fioetl
 
   fioetl-producer:
     build:
@@ -30,6 +32,8 @@ services:
       dockerfile: Dockerfile-publisher
     stop_grace_period: 1m30s
     restart: always
+    depends_on:
+      - rabbit
 
   fioetl:
     build:
@@ -39,6 +43,8 @@ services:
       - "8844"
     stop_grace_period: 1m30s
     restart: always
+    depends_on:
+      - rabbit
 
   rabbit:
     image: "rabbitmq:latest"
