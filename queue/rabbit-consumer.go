@@ -12,6 +12,10 @@ import (
 )
 
 func StartConsumer(ctx context.Context, channel string, messages chan []byte, errs chan error, quit chan interface{}) {
+	log.Println(channel, "consumer starting")
+	defer func() {
+		log.Println(channel, "consumer exiting")
+	}()
 	exitOn := func(err error) bool {
 		if err != nil {
 			log.Println(channel, " rabbit consumer: ", err)

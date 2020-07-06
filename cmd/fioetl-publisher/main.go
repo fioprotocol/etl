@@ -12,8 +12,9 @@ import (
 )
 
 func main() {
-	log.SetPrefix(" [fioetl-producer] ")
+	log.SetPrefix(" [fioetl-publisher] ")
 	log.SetFlags(log.LstdFlags|log.Lshortfile|log.Lmsgprefix)
+	log.Println("starting")
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -24,6 +25,7 @@ func main() {
 	go func() {
 		kafka.StartProducers(ctx, errs, kQuit)
 		wg.Done()
+		log.Println("kafka publishers have exited")
 	}()
 
 	sigc := make(chan os.Signal, 1)
@@ -31,11 +33,13 @@ func main() {
 		syscall.SIGHUP,
 		syscall.SIGINT,
 		syscall.SIGTERM,
-		syscall.SIGQUIT)
+		syscall.SIGQUIT,
+	)
+
 	for {
 		select {
 		case s := <-sigc:
-			log.Println("exiting on ", s)
+			log.Println("exiting on signal ", s)
 			cancel()
 			go func() {
 				<-time.After(5*time.Second)
