@@ -24,8 +24,15 @@ services:
     stop_grace_period: 1m30s
     restart: always
 
+  fioetl-producer:
+    build: .
+    dockerfile: Dockerfile-producer
+    stop_grace_period: 1m30s
+    restart: always
+
   fioetl:
     build: .
+    dockerfile: Dockerfile-consumer
     expose:
       - "8844"
     stop_grace_period: 1m30s
@@ -36,8 +43,8 @@ services:
     restart: always
     volumes:
       - type: volume
-          source: rabbit-data
-          target: /var/lib/rabbitmq
+        source: rabbit-data
+        target: /var/lib/rabbitmq
     expose:
       - "5672"
 

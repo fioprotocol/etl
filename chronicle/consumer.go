@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dapixio/fio.etl/kafka"
 	"github.com/dapixio/fio.etl/queue"
 	"github.com/dapixio/fio.etl/transform"
 	"golang.org/x/text/language"
@@ -130,10 +129,6 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 	go queue.StartProducer(pCtx, "row", c.rowChan, c.errs, rowQuit)
 	go queue.StartProducer(pCtx, "misc", c.miscChan, c.errs, miscQuit)
 
-	c.wg.Add(1)
-	kQuit := make(chan interface{})
-	go kafka.StartProducers(c.ctx, c.errs, kQuit)
-
 	panicked := func() {
 		stopped = true
 		pClose()
@@ -147,8 +142,6 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-c.ctx.Done():
 				return
-			case <-kQuit:
-				panicked()
 			case <-blockQuit:
 				panicked()
 			case <-txQuit:
@@ -410,7 +403,11 @@ func (c *Consumer) save() error {
 }
 
 func (c *Consumer) ack() error {
-	return c.ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d", c.Seen)))
+	// always return -256 of what has been seen, this is the max number of blocked routines allowed.
+	if c.Seen <= 256 {
+		return nil
+	}
+	return c.ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d", c.Seen-256)))
 }
 
 func (c *Consumer) request(start uint32, end uint32) error {
