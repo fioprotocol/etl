@@ -107,6 +107,7 @@ func (b *BlockHeader) BlockID() (string, error) {
 		HeaderExtensions: nil,
 	}
 
+
 	cereal, err := eos.MarshalBinary(ebh)
 	if err != nil {
 		return "", err

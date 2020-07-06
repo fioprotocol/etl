@@ -193,12 +193,27 @@ func (c *Consumer) consume() error {
 		}
 	}
 
+	countMux := sync.Mutex{}
 	go func() {
 		for {
-			currentMsgs += <-counterChan
+			m := <-counterChan
+			countMux.Lock()
+			currentMsgs += m
+			countMux.Unlock()
 		}
 	}()
 
+	wgMux := sync.Mutex{}
+	wgAdd := func(i int) {
+		wgMux.Lock()
+		c.wg.Add(i)
+		wgMux.Unlock()
+	}
+	wgDone := func() {
+		wgMux.Lock()
+		c.wg.Done()
+		wgMux.Unlock()
+	}
 	go func() {
 		for {
 			if stopped {
@@ -232,10 +247,10 @@ func (c *Consumer) consume() error {
 			case "ENCODER_ERROR", "RCVR_PAUSE", "FORK":
 				continue
 			case "TBL_ROW":
-				c.wg.Add(1)
+				wgAdd(1)
 				go func(d []byte) {
 					counterChan <- 1
-					defer c.wg.Done()
+					defer wgDone()
 					a, e = transform.Table(d)
 					if e != nil {
 						log.Println("process row:", e)
@@ -246,10 +261,10 @@ func (c *Consumer) consume() error {
 					counterChan <- -1
 				}(d)
 			case "BLOCK":
-				c.wg.Add(1)
+				wgAdd(1)
 				go func(data []byte) {
 					counterChan <- 1
-					defer c.wg.Done()
+					defer wgDone()
 					a, b, e = transform.Block(data)
 					if e != nil {
 						log.Println(e)
@@ -272,10 +287,10 @@ func (c *Consumer) consume() error {
 					}
 				}
 			case "PERMISSION", "PERMISSION_LINK", "ACC_METADATA":
-				c.wg.Add(1)
+				wgAdd(1)
 				go func(data []byte, s *msgSummary) {
 					counterChan <- 1
-					defer c.wg.Done()
+					defer wgDone()
 					a, e = transform.Account(data, s.Msgtype)
 					if e != nil || a == nil {
 						counterChan <- -1
@@ -293,10 +308,10 @@ func (c *Consumer) consume() error {
 				}
 				c.miscChan <- a
 			case "TX_TRACE":
-				c.wg.Add(1)
+				wgAdd(1)
 				go func(data []byte) {
 					counterChan <- 1
-					defer c.wg.Done()
+					defer wgDone()
 					a, e = transform.Trace(data)
 					if e != nil || a == nil {
 						counterChan <- -1
@@ -318,8 +333,10 @@ func (c *Consumer) consume() error {
 				return
 			case <-t.C:
 				time.Sleep(5 * time.Second)
+				countMux.Lock()
 				log.Println(p.Sprintf("                        Block: %d, processed %d MiB", c.Seen, size/1024/1024))
 				log.Println(p.Sprintf("                               %d   routines actively processing messages", currentMsgs))
+				countMux.Unlock()
 			}
 		}
 	}()
