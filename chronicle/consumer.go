@@ -175,7 +175,7 @@ func (c *Consumer) consume() error {
 	p := message.NewPrinter(language.AmericanEnglish)
 	var size uint64
 	var t int
-	var a, b, d []byte
+	var a, d []byte
 	var e error
 	var fin transform.BlockFinished
 	// deleteme debug:
@@ -192,16 +192,6 @@ func (c *Consumer) consume() error {
 			time.Sleep(100*time.Millisecond)
 		}
 	}
-
-	countMux := sync.Mutex{}
-	go func() {
-		for {
-			m := <-counterChan
-			countMux.Lock()
-			currentMsgs += m
-			countMux.Unlock()
-		}
-	}()
 
 	wgMux := sync.Mutex{}
 	wgAdd := func(i int) {
@@ -251,7 +241,7 @@ func (c *Consumer) consume() error {
 				go func(d []byte) {
 					counterChan <- 1
 					defer wgDone()
-					a, e = transform.Table(d)
+					a, e := transform.Table(d)
 					if e != nil {
 						log.Println("process row:", e)
 						counterChan <- -1
@@ -265,7 +255,7 @@ func (c *Consumer) consume() error {
 				go func(data []byte) {
 					counterChan <- 1
 					defer wgDone()
-					a, b, e = transform.Block(data)
+					a, b, e := transform.Block(data)
 					if e != nil {
 						log.Println(e)
 					}
@@ -291,7 +281,7 @@ func (c *Consumer) consume() error {
 				go func(data []byte, s *msgSummary) {
 					counterChan <- 1
 					defer wgDone()
-					a, e = transform.Account(data, s.Msgtype)
+					a, e := transform.Account(data, s.Msgtype)
 					if e != nil || a == nil {
 						counterChan <- -1
 						return
@@ -312,7 +302,7 @@ func (c *Consumer) consume() error {
 				go func(data []byte) {
 					counterChan <- 1
 					defer wgDone()
-					a, e = transform.Trace(data)
+					a, e := transform.Trace(data)
 					if e != nil || a == nil {
 						counterChan <- -1
 						return
@@ -333,10 +323,10 @@ func (c *Consumer) consume() error {
 				return
 			case <-t.C:
 				time.Sleep(5 * time.Second)
-				countMux.Lock()
 				log.Println(p.Sprintf("                        Block: %d, processed %d MiB", c.Seen, size/1024/1024))
 				log.Println(p.Sprintf("                               %d   routines actively processing messages", currentMsgs))
-				countMux.Unlock()
+			case m := <-counterChan:
+				currentMsgs += m
 			}
 		}
 	}()
@@ -355,13 +345,6 @@ func (c *Consumer) consume() error {
 						log.Println(err)
 					}
 				}
-				// close our session and kindly request a little housekeeping every 500mb or so
-				//if size/1024/1024 > 512 {
-				//	log.Println("requesting restart to clean memory")
-				//	stopped = true
-				//	c.cancel()
-				//	return
-				//}
 			}
 		}
 	}()

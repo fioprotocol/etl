@@ -112,13 +112,17 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		}
 	}
 
+	cfgMux := sync.Mutex{}
 	publisher := func(c chan *pChan) {
 		defer iwg.Done()
+		cfgMux.Lock()
 		producer, err := sarama.NewAsyncProducer(brokerList, getConfig())
 		if err != nil {
 			errs <- err
+			cfgMux.Unlock()
 			return
 		}
+		cfgMux.Unlock()
 		defer producer.AsyncClose()
 		go func() {
 			for {
