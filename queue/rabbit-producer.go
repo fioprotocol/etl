@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"log"
+	"sync"
 )
 
 func StartProducer(ctx context.Context, channel string, messages chan []byte, errs chan error, quit chan interface{}) {
@@ -50,6 +51,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 		return
 	}
 
+	mux := sync.Mutex{}
 	for {
 		select {
 		case <-ctx.Done():
@@ -59,6 +61,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			if d == nil || len(d) == 0 {
 				continue
 			}
+			mux.Lock()
 			err = ch.Publish(
 				"",
 				q.Name,
@@ -72,6 +75,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			if exitOn(err) {
 				return
 			}
+			mux.Unlock()
 		}
 	}
 }

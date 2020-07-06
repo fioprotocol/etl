@@ -89,12 +89,14 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 	go queue.StartConsumer(cCtx, "row", rowChan, errs, rowQuit)
 	go queue.StartConsumer(cCtx, "misc", miscChan, errs, miscQuit)
 
-	var pause bool
 	iwg := sync.WaitGroup{}
+	mux := sync.Mutex{}
 	send := func(pc *pChan, producer sarama.AsyncProducer) {
 		if pc.payload == nil || producer == nil {
 			return
 		}
+		mux.Lock()
+		defer mux.Unlock()
 		b := bytes.NewBuffer(nil)
 		gz := gzip.NewWriter(b)
 		_, err := gz.Write(pc.payload)
@@ -140,9 +142,6 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 				log.Println("kafka producer exiting")
 				return
 			case msg := <-c:
-				for pause {
-					time.Sleep(100 * time.Millisecond)
-				}
 				send(msg, producer)
 			}
 		}
