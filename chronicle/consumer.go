@@ -193,6 +193,7 @@ func (c *Consumer) consume() error {
 		}
 	}
 
+	sizes := make(chan uint64)
 	wgMux := sync.Mutex{}
 	wgAdd := func(i int) {
 		wgMux.Lock()
@@ -231,7 +232,7 @@ func (c *Consumer) consume() error {
 				log.Println(e)
 				continue
 			}
-			size += uint64(len(d))
+			sizes <- uint64(len(d))
 			_ = c.ws.SetReadDeadline(time.Now().Add(time.Minute))
 			switch s.Msgtype {
 			case "ENCODER_ERROR", "RCVR_PAUSE", "FORK":
@@ -322,9 +323,10 @@ func (c *Consumer) consume() error {
 			case <-c.ctx.Done():
 				return
 			case <-t.C:
-				time.Sleep(5 * time.Second)
 				log.Println(p.Sprintf("                        Block: %d, processed %d MiB", c.Seen, size/1024/1024))
 				log.Println(p.Sprintf("                               %d   routines actively processing messages", currentMsgs))
+			case s := <-sizes:
+				size += s
 			case m := <-counterChan:
 				currentMsgs += m
 			}
