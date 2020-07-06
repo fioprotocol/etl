@@ -31,6 +31,16 @@ services:
     stop_grace_period: 1m30s
     restart: always
 
+  rabbit:
+    image: "rabbitmq:latest"
+    restart: always
+    volumes:
+      - type: volume
+          source: rabbit-data
+          target: /var/lib/rabbitmq
+    expose:
+      - "5672"
 
 volumes:
   chronicle-data:
+  rabbit-data:

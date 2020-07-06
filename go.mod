@@ -7,6 +7,7 @@ require (
 	github.com/fioprotocol/fio-go v0.0.0-20200527044736-9a9c9a080706
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/websocket v1.4.2
+	github.com/streadway/amqp v1.0.0
 	golang.org/x/text v0.3.3
 	gopkg.in/yaml.v2 v2.3.0
 )

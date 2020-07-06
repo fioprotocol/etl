@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"github.com/Shopify/sarama"
+	"github.com/dapixio/fio.etl/queue"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -71,8 +72,22 @@ type pChan struct {
 	topic   string
 }
 
-func StartProducers(ctx context.Context, headerChan chan []byte, txChan chan []byte, rowChan chan []byte,
-	miscChan chan []byte, errs chan error, done chan interface{}) {
+func StartProducers(ctx context.Context, errs chan error, done chan interface{}) {
+
+	cCtx, cCancel := context.WithCancel(context.Background())
+	blockChan := make(chan []byte, 1)
+	txChan := make(chan []byte, 1)
+	rowChan := make(chan []byte, 1)
+	miscChan := make(chan []byte, 1)
+
+	blockQuit := make(chan interface{})
+	txQuit := make(chan interface{})
+	rowQuit := make(chan interface{})
+	miscQuit := make(chan interface{})
+	go queue.StartConsumer(cCtx, "block", blockChan, errs, blockQuit)
+	go queue.StartConsumer(cCtx, "tx", txChan, errs, txQuit)
+	go queue.StartConsumer(cCtx, "row", rowChan, errs, rowQuit)
+	go queue.StartConsumer(cCtx, "misc", miscChan, errs, miscQuit)
 
 	var pause bool
 	iwg := sync.WaitGroup{}
@@ -118,6 +133,9 @@ func StartProducers(ctx context.Context, headerChan chan []byte, txChan chan []b
 		}()
 		for {
 			select {
+			case <-cCtx.Done():
+				log.Println("kafka producer exiting, upstream consumer exited")
+				return
 			case <-ctx.Done():
 				log.Println("kafka producer exiting")
 				return
@@ -146,7 +164,7 @@ func StartProducers(ctx context.Context, headerChan chan []byte, txChan chan []b
 					topic: "row",
 				}
 			}(r)
-		case header := <-headerChan:
+		case header := <-blockChan:
 			func(d []byte){
 				c <- &pChan{
 					payload: d,
@@ -168,10 +186,19 @@ func StartProducers(ctx context.Context, headerChan chan []byte, txChan chan []b
 				}
 			}(account)
 		case <-ctx.Done():
+			cCancel()
 			iwg.Wait()
 			log.Println("kafka workers exited")
 			close(done)
 			return
+		case <-blockQuit:
+			cCancel()
+		case <-rowQuit:
+			cCancel()
+		case <-txQuit:
+			cCancel()
+		case <-miscQuit:
+			cCancel()
 		}
 	}
 }

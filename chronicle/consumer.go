@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dapixio/fio.etl/kafka"
+	"github.com/dapixio/fio.etl/queue"
 	"github.com/dapixio/fio.etl/transform"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -77,10 +78,10 @@ func NewConsumer(file string) *Consumer {
 	}
 	consumer.ctx, consumer.cancel = context.WithCancel(context.Background())
 	consumer.errs = make(chan error)
-	consumer.txChan = make(chan []byte)
-	consumer.rowChan = make(chan []byte)
-	consumer.miscChan = make(chan []byte)
-	consumer.blockChan = make(chan []byte)
+	consumer.txChan = make(chan []byte, 1)
+	consumer.rowChan = make(chan []byte, 1)
+	consumer.miscChan = make(chan []byte, 1)
+	consumer.blockChan = make(chan []byte, 1)
 	consumer.fileName = file
 	return consumer
 }
@@ -118,18 +119,52 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1)
 	}()
 
+	blockQuit := make(chan interface{})
+	txQuit := make(chan interface{})
+	rowQuit := make(chan interface{})
+	miscQuit := make(chan interface{})
+	pCtx, pClose := context.WithCancel(context.Background())
+	go queue.StartProducer(pCtx, "block", c.blockChan, blockQuit)
+	go queue.StartProducer(pCtx, "tx", c.txChan, txQuit)
+	go queue.StartProducer(pCtx, "row", c.rowChan, rowQuit)
+	go queue.StartProducer(pCtx, "misc", c.miscChan, miscQuit)
+
 	c.wg.Add(1)
-	kDone := make(chan interface{})
-	go kafka.StartProducers(c.ctx, c.blockChan, c.txChan, c.rowChan, c.miscChan, c.errs, kDone)
+	kQuit := make(chan interface{})
+	go kafka.StartProducers(c.ctx, c.errs, kQuit)
 	go func() {
-		<-kDone
-		c.wg.Done()
-		return
+		for {
+			select {
+			case <-kQuit:
+				c.wg.Done()
+				pClose()
+				return
+			case <-blockQuit:
+				c.wg.Done()
+				pClose()
+				return
+			case <-txQuit:
+				c.wg.Done()
+				pClose()
+				return
+			case <-rowQuit:
+				c.wg.Done()
+				pClose()
+				return
+			case <-miscQuit:
+				c.wg.Done()
+				pClose()
+				return
+			}
+		}
 	}()
 	err = c.consume()
+	exitCode := 0
 	if err != nil {
+		exitCode = 1
 		log.Println(err)
 	}
+	os.Exit(exitCode)
 }
 
 type msgSummary struct {
@@ -169,7 +204,7 @@ func (c *Consumer) consume() error {
 			currentMsgs += <-counterChan
 		}
 	}()
-	
+
 	go func() {
 		for {
 			if stopped {
