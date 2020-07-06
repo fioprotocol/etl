@@ -39,8 +39,19 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 	}
 	defer ch.Close()
 
-
 	ack := ch.NotifyPublish(make(chan amqp.Confirmation))
+	ch.Confirm(true)
+
+	go func() {
+		for {
+			a := <-ack
+			if !a.Ack {
+				errs <- errors.New(channel + " failed to send message to queue")
+				close(quit)
+				return
+			}
+		}
+	}()
 
 	q, err := ch.QueueDeclare(
 		channel,
@@ -57,6 +68,8 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 	mux := sync.Mutex{}
 	for {
 		select {
+		case <-quit:
+			return
 		case <-ctx.Done():
 			close(quit)
 			return
@@ -78,12 +91,6 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			if exitOn(err) {
 				return
 			}
-			a := <-ack
-			if !a.Ack {
-				errs <- errors.New(channel+" failed to send message to queue")
-				close(quit)
-				return
-		}
 			mux.Unlock()
 		}
 	}
