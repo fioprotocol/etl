@@ -140,20 +140,20 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 				pClose()
 				return
 			case <-blockQuit:
-				c.wg.Done()
 				pClose()
+				c.cancel()
 				return
 			case <-txQuit:
-				c.wg.Done()
 				pClose()
+				c.cancel()
 				return
 			case <-rowQuit:
-				c.wg.Done()
 				pClose()
+				c.cancel()
 				return
 			case <-miscQuit:
-				c.wg.Done()
 				pClose()
+				c.cancel()
 				return
 			}
 		}
@@ -210,7 +210,7 @@ func (c *Consumer) consume() error {
 			if stopped {
 				return
 			}
-			for currentMsgs > 16384 {
+			for currentMsgs > 64 {
 				log.Println("paused.")
 				time.Sleep(2*time.Second)
 			}
