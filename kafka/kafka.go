@@ -149,7 +149,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 	}
 	const workers int = 4
 	iwg.Add(workers)
-	c := make(chan *pChan)
+	c := make(chan *pChan, 1)
 	for i := 0; i < workers; i++ {
 		go publisher(c)
 	}
