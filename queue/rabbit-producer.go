@@ -2,11 +2,13 @@ package queue
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/streadway/amqp"
 	"log"
 )
 
-func StartProducer(ctx context.Context, channel string, messages chan []byte, quit chan interface{}) {
+func StartProducer(ctx context.Context, channel string, messages chan []byte, errs chan error, quit chan interface{}) {
 	exitOn := func(err error) bool {
 		if err != nil {
 			log.Println(channel, "- rabbit producer: ", err)
@@ -19,6 +21,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, qu
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("panic in ", channel, r)
+			errs <- errors.New(fmt.Sprintf("%v", r))
 			close(quit)
 		}
 	}()

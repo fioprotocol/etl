@@ -24,6 +24,7 @@ import (
 
 var (
 	connected bool
+	stopped bool
 )
 
 type Consumer struct {
@@ -124,37 +125,38 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 	rowQuit := make(chan interface{})
 	miscQuit := make(chan interface{})
 	pCtx, pClose := context.WithCancel(context.Background())
-	go queue.StartProducer(pCtx, "block", c.blockChan, blockQuit)
-	go queue.StartProducer(pCtx, "tx", c.txChan, txQuit)
-	go queue.StartProducer(pCtx, "row", c.rowChan, rowQuit)
-	go queue.StartProducer(pCtx, "misc", c.miscChan, miscQuit)
+	go queue.StartProducer(pCtx, "block", c.blockChan, c.errs, blockQuit)
+	go queue.StartProducer(pCtx, "tx", c.txChan, c.errs, txQuit)
+	go queue.StartProducer(pCtx, "row", c.rowChan, c.errs, rowQuit)
+	go queue.StartProducer(pCtx, "misc", c.miscChan, c.errs, miscQuit)
 
 	c.wg.Add(1)
 	kQuit := make(chan interface{})
 	go kafka.StartProducers(c.ctx, c.errs, kQuit)
+
+	panicked := func() {
+		stopped = true
+		pClose()
+		c.cancel()
+		time.Sleep(2*time.Second)
+		os.Exit(1)
+	}
+
 	go func() {
 		for {
 			select {
+			case <-c.ctx.Done():
+				return
 			case <-kQuit:
-				c.wg.Done()
-				pClose()
-				return
+				panicked()
 			case <-blockQuit:
-				pClose()
-				c.cancel()
-				return
+				panicked()
 			case <-txQuit:
-				pClose()
-				c.cancel()
-				return
+				panicked()
 			case <-rowQuit:
-				pClose()
-				c.cancel()
-				return
+				panicked()
 			case <-miscQuit:
-				pClose()
-				c.cancel()
-				return
+				panicked()
 			}
 		}
 	}()
@@ -183,7 +185,6 @@ func (c *Consumer) consume() error {
 	var a, b, d []byte
 	var e error
 	var fin transform.BlockFinished
-	var stopped bool
 	// deleteme debug:
 	var currentMsgs int
 	counterChan := make(chan int)
@@ -210,7 +211,7 @@ func (c *Consumer) consume() error {
 			if stopped {
 				return
 			}
-			for currentMsgs > 64 {
+			for currentMsgs > 256 {
 				log.Println("paused.")
 				time.Sleep(2*time.Second)
 			}
