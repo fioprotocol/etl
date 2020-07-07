@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"github.com/fioprotocol/fio-go/imports/eos-go"
 	"github.com/fioprotocol/fio-go/imports/eos-go/ecc"
+	"github.com/sasha-s/go-deadlock"
 	"log"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 

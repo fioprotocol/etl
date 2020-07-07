@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"github.com/Shopify/sarama"
 	"github.com/dapixio/fio.etl/queue"
+	"github.com/sasha-s/go-deadlock"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
