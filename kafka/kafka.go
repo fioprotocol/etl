@@ -8,6 +8,8 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/dapixio/fio.etl/queue"
 	"github.com/sasha-s/go-deadlock"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -158,10 +160,14 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		go publisher(c)
 	}
 
+	printTick := time.NewTicker(30*time.Second)
+	p := message.NewPrinter(language.AmericanEnglish)
+	var sentRow, sentBlock, sentTx, sentMisc uint64
 	for {
 		select {
 		case r := <-rowChan:
 			// use a closure to dereference
+			sentRow += 1
 			func(d []byte){
 				c <- &pChan{
 					payload: d,
@@ -169,6 +175,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 				}
 			}(r)
 		case header := <-blockChan:
+			sentBlock += 1
 			func(d []byte){
 				c <- &pChan{
 					payload: d,
@@ -176,6 +183,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 				}
 			}(header)
 		case tx := <-txChan:
+			sentTx += 1
 			func(d []byte){
 				c <- &pChan{
 					payload: d,
@@ -183,6 +191,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 				}
 			}(tx)
 		case account := <-miscChan:
+			sentMisc += 1
 			func(d []byte){
 				c <- &pChan{
 					payload: d,
@@ -195,6 +204,8 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 			log.Println("kafka workers exited")
 			close(done)
 			return
+		case <-printTick.C:
+			log.Println(p.Sprintf("kafka publisher has sent: block %d, row %d, tx %d, misc %d", sentBlock, sentRow, sentTx, sentMisc))
 		case <-blockQuit:
 			cCancel()
 		case <-rowQuit:

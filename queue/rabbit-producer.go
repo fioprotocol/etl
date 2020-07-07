@@ -53,7 +53,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 		return
 	}
 
-	printTick := time.NewTicker(10*time.Second)
+	printTick := time.NewTicker(30*time.Second)
 	var sent uint64
 	p := message.NewPrinter(language.AmericanEnglish)
 	for {
