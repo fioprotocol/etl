@@ -11,7 +11,6 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -62,7 +61,7 @@ func NewConsumer(file string) *Consumer {
 			defer f.Close()
 			b, err := ioutil.ReadAll(f)
 			if err != nil {
-				log.Println(err)
+				elog.Println(err)
 				isNew = true
 				return
 			}
@@ -110,12 +109,12 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.ws.Close()
-	log.Println("connected")
+	ilog.Println("connected")
 	go func() {
 		e := <-c.errs
 		c.cancel()
-		log.Println("delaying 30s exit on err to allow rate limiting to cool off")
-		log.Println(e)
+		dlog.Println("delaying 30s exit on err to allow rate limiting to cool off")
+		elog.Println(e)
 		time.Sleep(30 * time.Second)
 		os.Exit(1)
 	}()
@@ -158,7 +157,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 	exitCode := 0
 	if err != nil {
 		exitCode = 1
-		log.Println(err)
+		elog.Println(err)
 	}
 	os.Exit(exitCode)
 }
@@ -184,7 +183,7 @@ func (c *Consumer) consume() error {
 	counterChan := make(chan int)
 
 	waitForQueue := func() {
-		log.Println("waiting up to 180s for queue to empty")
+		ilog.Println("waiting up to 180s for queue to empty")
 		go func() {
 			time.Sleep(180*time.Second)
 			c.cancel()
@@ -212,12 +211,12 @@ func (c *Consumer) consume() error {
 				return
 			}
 			for currentMsgs > 256 {
-				log.Println("paused.")
+				dlog.Println("paused.")
 				time.Sleep(2*time.Second)
 			}
 			t, d, e = c.ws.ReadMessage()
 			if e != nil {
-				log.Println(e)
+				elog.Println(e)
 				_ = c.ws.Close()
 				waitForQueue()
 				c.cancel()
@@ -230,7 +229,7 @@ func (c *Consumer) consume() error {
 			s := &msgSummary{}
 			e = json.Unmarshal(d, s)
 			if e != nil {
-				log.Println(e)
+				elog.Println(e)
 				continue
 			}
 			sizes <- uint64(len(d))
@@ -245,7 +244,7 @@ func (c *Consumer) consume() error {
 					defer wgDone()
 					a, e := transform.Table(d)
 					if e != nil {
-						log.Println("process row:", e)
+						elog.Println("process row:", e)
 						counterChan <- -1
 						return
 					}
@@ -259,7 +258,7 @@ func (c *Consumer) consume() error {
 					defer wgDone()
 					a, b, e := transform.Block(data)
 					if e != nil {
-						log.Println(e)
+						elog.Println(e)
 					}
 					if a != nil {
 						c.blockChan <- a
@@ -295,7 +294,7 @@ func (c *Consumer) consume() error {
 				// we'll want this one to block for abi updates:
 				a, e = transform.Abi(d)
 				if e != nil {
-					log.Println(e)
+					elog.Println(e)
 					continue
 				}
 				c.miscChan <- a
@@ -326,8 +325,8 @@ func (c *Consumer) consume() error {
 			case <-c.ctx.Done():
 				return
 			case <-printStat.C:
-				log.Println(p.Sprintf("                        Block: %d, processed %d MiB", c.Seen, size/1024/1024))
-				log.Println(p.Sprintf("                               %d   routines actively processing messages", currentMsgs))
+				dlog.Println(p.Sprintf("Block: %d, processed %d MiB", c.Seen, size/1024/1024))
+				dlog.Println(p.Sprintf("%d  routines are waiting for buffer", currentMsgs))
 			case s := <-sizes:
 				size += s
 			case m := <-counterChan:
@@ -339,7 +338,7 @@ func (c *Consumer) consume() error {
 					c.Seen = c.Sent
 					err = c.ack()
 					if err != nil {
-						log.Println(err)
+						elog.Println(err)
 					}
 				}
 			}
@@ -352,9 +351,9 @@ func (c *Consumer) consume() error {
 		select {
 		case <-c.ctx.Done():
 			stopped = true
-			log.Println("consumer cleaning up")
+			ilog.Println("consumer cleaning up")
 			c.wg.Wait()
-			log.Println("consumer exiting")
+			ilog.Println("consumer exiting")
 			runtime.GC()
 			_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
 			return finalErr
@@ -370,9 +369,9 @@ func (c *Consumer) consume() error {
 			runtime.ReadMemStats(memStats)
 			if memStats.HeapInuse > 4 * 1024 * 1024 * 1024 {
 				stopped = true
-				log.Println("Exceeded 4gb heap, clearing existing queue")
+				elog.Println("Exceeded 4gb heap, clearing existing queue")
 				waitForQueue()
-				log.Println("cleared queue, restarting.")
+				ilog.Println("cleared queue, restarting.")
 				c.cancel()
 				_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
 			}

@@ -7,14 +7,13 @@ import (
 	"github.com/streadway/amqp"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"log"
 	"time"
 )
 
 func StartProducer(ctx context.Context, channel string, messages chan []byte, errs chan error, quit chan interface{}) {
 	exitOn := func(err error) bool {
 		if err != nil {
-			log.Println(channel, "- rabbit producer: ", err)
+			elog.Println(channel, "- rabbit producer: ", err)
 			close(quit)
 			return true
 		}
@@ -23,7 +22,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("panic in ", channel, r)
+			elog.Println("panic in ", channel, r)
 			errs <- errors.New(fmt.Sprintf("%v", r))
 			close(quit)
 		}
@@ -62,7 +61,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			close(quit)
 			return
 		case <- printTick.C:
-			log.Println(p.Sprintf("%8s : sent total of %d messages", channel, sent))
+			dlog.Println(p.Sprintf("%8s : sent total of %d messages", channel, sent))
 		case d := <-messages:
 			if d == nil || len(d) == 0 {
 				continue

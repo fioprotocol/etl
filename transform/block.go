@@ -9,6 +9,7 @@ import (
 	"github.com/fioprotocol/fio-go/imports/eos-go"
 	"github.com/fioprotocol/fio-go/imports/eos-go/ecc"
 	"github.com/sasha-s/go-deadlock"
+	l "github.com/dapixio/fio.etl/logging"
 	"log"
 	"strconv"
 	"strings"
@@ -143,7 +144,7 @@ func Block(b []byte) (header json.RawMessage, schedule json.RawMessage, err erro
 		}
 		schedule, err = json.Marshal(&sched)
 		if err != nil {
-			log.Println(err)
+			elog.Println(err)
 			schedule = nil
 		}
 	}

@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/fioprotocol/fio-go/imports/eos-go"
-	"log"
 	"strconv"
 	"sync"
 )
@@ -72,7 +71,7 @@ func newAbiMap() (*abiMap, error) {
 func (a *abiMap) add(account string, abi []byte) {
 	na, err := eos.NewABI(bytes.NewReader(abi))
 	if err != nil {
-		log.Println("adding new ABI:", err)
+		elog.Println("adding new ABI:", err)
 		return
 	}
 	a.Lock()

@@ -12,7 +12,6 @@ import (
 	"golang.org/x/text/message"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"log"
 	"os"
 	"runtime"
 	"sync"
@@ -31,17 +30,17 @@ func getConfig() *sarama.Config {
 	// TODO: make this a command line option:
 	f, err := os.OpenFile("auth.yml", os.O_RDONLY, 0644)
 	if err != nil {
-		log.Println("Please ensure auth.yml is present and contains connection information")
-		log.Fatal(err)
+		elog.Println("Please ensure auth.yml is present and contains connection information")
+		elog.Fatal(err)
 	}
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
-		log.Fatal(err)
+		elog.Fatal(err)
 	}
 	auth := &Settings{}
 	err = yaml.Unmarshal(b, auth)
 	if err != nil {
-		log.Fatal(err)
+		elog.Fatal(err)
 	}
 	config := sarama.NewConfig()
 	config.Net.DialTimeout = 10 * time.Second
@@ -124,10 +123,10 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		for {
 			select {
 			case <-cCtx.Done():
-				log.Println("kafka producer exiting, upstream consumer exited")
+				ilog.Println("kafka producer exiting, upstream consumer exited")
 				return
 			case <-ctx.Done():
-				log.Println("kafka producer exiting")
+				ilog.Println("kafka producer exiting")
 				return
 			case pc := <-c:
 				if pc.payload == nil || producer == nil {
@@ -138,7 +137,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 				gz := gzip.NewWriter(b)
 				_, err := gz.Write(pc.payload)
 				if err != nil {
-					log.Println(err)
+					elog.Println(err)
 					mux.Unlock()
 					continue
 				}
@@ -168,17 +167,17 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		case <-ctx.Done():
 			cCancel()
 			iwg.Wait()
-			log.Println("kafka workers exited")
+			ilog.Println("kafka workers exited")
 			close(done)
 			return
 		case <-printTick.C:
-			log.Println(p.Sprintf("kafka publisher has sent: block %d, row %d, tx %d, misc %d", sentBlock, sentRow, sentTx, sentMisc))
+			dlog.Println(p.Sprintf("kafka publisher has sent: block %d, row %d, tx %d, misc %d", sentBlock, sentRow, sentTx, sentMisc))
 		case <-memTick.C:
 			// looks like kafka has a mem leak, or I am missing a step that prevents a resource leak, bad workaround follows, stinky!
 			runtime.ReadMemStats(memStats)
-			log.Println(p.Sprintf("heap usage: %d MiB", memStats.HeapInuse / (1024 * 1024)))
+			dlog.Println(p.Sprintf("heap usage: %d MiB", memStats.HeapInuse / (1024 * 1024)))
 			if memStats.HeapInuse > 2 * 1024 * 1024 * 1024 {
-				log.Println("Exceeded 2gb heap, restarting publisher")
+				elog.Println("Exceeded 2gb heap, restarting publisher")
 				cCancel()
 				close(done)
 				return
