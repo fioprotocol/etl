@@ -165,6 +165,32 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 	var sentRow, sentBlock, sentTx, sentMisc uint64
 	for {
 		select {
+		case <-ctx.Done():
+			cCancel()
+			iwg.Wait()
+			log.Println("kafka workers exited")
+			close(done)
+			return
+		case <-printTick.C:
+			log.Println(p.Sprintf("kafka publisher has sent: block %d, row %d, tx %d, misc %d", sentBlock, sentRow, sentTx, sentMisc))
+		case <-memTick.C:
+			// looks like kafka has a mem leak, or I am missing a step that prevents a resource leak, bad workaround follows, stinky!
+			runtime.ReadMemStats(memStats)
+			log.Println(p.Sprintf("heap usage: %d MiB"), memStats.HeapInuse * 1024 * 1024)
+			if memStats.HeapInuse > 2 * 1024 * 1024 * 1024 {
+				log.Println("Exceeded 2gb heap, restarting publisher")
+				cCancel()
+				close(done)
+				return
+			}
+		case <-blockQuit:
+			cCancel()
+		case <-rowQuit:
+			cCancel()
+		case <-txQuit:
+			cCancel()
+		case <-miscQuit:
+			cCancel()
 		case r := <-rowChan:
 			// use a closure to dereference
 			sentRow += 1
@@ -198,31 +224,6 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 					topic: "misc",
 				}
 			}(account)
-		case <-ctx.Done():
-			cCancel()
-			iwg.Wait()
-			log.Println("kafka workers exited")
-			close(done)
-			return
-		case <-printTick.C:
-			log.Println(p.Sprintf("kafka publisher has sent: block %d, row %d, tx %d, misc %d", sentBlock, sentRow, sentTx, sentMisc))
-		case <-memTick.C:
-			// looks like kafka has a mem leak, or I am missing a step that prevents a resource leak, bad workaround follows, stinky!
-			runtime.ReadMemStats(memStats)
-			if memStats.HeapInuse > 2 * 1024 * 1024 * 1024 {
-				log.Println("Exceeded 2gb heap, restarting publisher")
-				cCancel()
-				close(done)
-				return
-			}
-		case <-blockQuit:
-			cCancel()
-		case <-rowQuit:
-			cCancel()
-		case <-txQuit:
-			cCancel()
-		case <-miscQuit:
-			cCancel()
 		}
 	}
 }
