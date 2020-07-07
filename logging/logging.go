@@ -12,14 +12,11 @@ func Setup(prefix string) (err *log.Logger, info *log.Logger, debug *log.Logger)
 		i *log.Logger
 		d *log.Logger
 	)
-	if len(prefix) < 18 {
-		prefix = prefix + strings.Repeat(" ", 18-len(prefix))
+	if len(prefix) < 24 {
+		prefix = prefix + strings.Repeat(" ", 24-len(prefix))
 	}
-	e = log.New(os.Stderr, prefix, log.Lshortfile|log.LstdFlags|log.Lmsgprefix)
-	e.SetPrefix(" ERROR: ")
-	i = log.New(os.Stdout, prefix, log.Lshortfile|log.LstdFlags|log.Lmsgprefix)
-	e.SetPrefix(" INFO: ")
-	d = log.New(os.Stdout, prefix, log.Lshortfile|log.LstdFlags|log.Lmsgprefix)
-	e.SetPrefix(" DEBUG: ")
+	e = log.New(os.Stderr, prefix+" ERROR: ", log.Lshortfile|log.LstdFlags|log.Lmsgprefix)
+	i = log.New(os.Stdout, prefix+"  INFO: ", log.Lshortfile|log.LstdFlags|log.Lmsgprefix)
+	d = log.New(os.Stdout, prefix+" DEBUG: ", log.Lshortfile|log.LstdFlags|log.Lmsgprefix)
 	return e, i, d
 }
