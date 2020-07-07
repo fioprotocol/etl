@@ -90,7 +90,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 	go queue.StartConsumer(cCtx, "misc", miscChan, errs, miscQuit)
 
 	iwg := sync.WaitGroup{}
-	mux := sync.Mutex{}
+	mux := deadlock.Mutex{}
 	send := func(pc *pChan, producer sarama.AsyncProducer) {
 		if pc.payload == nil || producer == nil {
 			return
@@ -112,7 +112,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		}
 	}
 
-	cfgMux := sync.Mutex{}
+	cfgMux := deadlock.Mutex{}
 	publisher := func(c chan *pChan) {
 		defer iwg.Done()
 		cfgMux.Lock()

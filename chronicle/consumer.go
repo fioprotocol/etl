@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/dapixio/fio.etl/queue"
 	"github.com/dapixio/fio.etl/transform"
+	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"io/ioutil"
@@ -38,7 +39,7 @@ type Consumer struct {
 	r    *http.Request
 	ws   *websocket.Conn
 	last time.Time
-	mux  sync.Mutex
+	mux  deadlock.Mutex
 	wg   sync.WaitGroup
 
 	ctx       context.Context
@@ -194,7 +195,7 @@ func (c *Consumer) consume() error {
 	}
 
 	sizes := make(chan uint64)
-	wgMux := sync.Mutex{}
+	wgMux := deadlock.Mutex{}
 	wgAdd := func(i int) {
 		wgMux.Lock()
 		c.wg.Add(i)

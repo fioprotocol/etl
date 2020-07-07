@@ -70,7 +70,7 @@ type BlockHeader struct {
 	ScheduleVersion  interface{}                    `json:"schedule_version"`
 	NewProducers     *ProducerSchedule `json:"new_producers" eos:"optional"`
 	HeaderExtensions []*Extension              `json:"header_extensions"`
-	sync.Mutex
+	deadlock.Mutex
 }
 
 func (b *BlockHeader) BlockNumber() uint32 {
