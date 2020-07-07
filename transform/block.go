@@ -74,8 +74,6 @@ type BlockHeader struct {
 }
 
 func (b *BlockHeader) BlockNumber() uint32 {
-	b.Lock()
-	defer b.Unlock()
 	return binary.BigEndian.Uint32(b.Previous[:4]) + 1
 }
 
