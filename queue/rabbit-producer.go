@@ -41,26 +41,6 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 	}
 	defer ch.Close()
 
-	ack, nack := ch.NotifyConfirm(make(chan uint64), make(chan uint64))
-	go func() {
-		t := time.NewTicker(10*time.Second)
-		var total uint64
-		p := message.NewPrinter(language.AmericanEnglish)
-		for {
-			select {
-			case <-nack:
-				errs <- errors.New(channel + " failed to send message to queue")
-				close(quit)
-				return
-			case <-ack:
-				total += 1
-			case <- t.C:
-				log.Println(p.Sprintf("%8s: successfully sent %d total messages to queue", channel, total))
-			}
-
-		}
-	}()
-
 	q, err := ch.QueueDeclare(
 		channel,
 		true,
@@ -73,19 +53,20 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 		return
 	}
 
-	//mux := sync.Mutex{}
+	printTick := time.NewTicker(10*time.Second)
+	var sent uint64
+	p := message.NewPrinter(language.AmericanEnglish)
 	for {
 		select {
-		case <-quit:
-			return
 		case <-ctx.Done():
 			close(quit)
 			return
+		case <- printTick.C:
+			log.Println(p.Sprintf("%8s : sent total of %d messages", channel, sent))
 		case d := <-messages:
 			if d == nil || len(d) == 0 {
 				continue
 			}
-			//mux.Lock()
 			err = ch.Publish(
 				"",
 				q.Name,
@@ -99,7 +80,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			if exitOn(err) {
 				return
 			}
-			//mux.Unlock()
+			sent += 1
 		}
 	}
 }
