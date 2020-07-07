@@ -8,7 +8,6 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"log"
-	"sync"
 	"time"
 )
 
@@ -56,7 +55,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			case <-ack:
 				total += 1
 			case <- t.C:
-				log.Println(p.Sprintf("successfully sent %d total messages to queue"))
+				log.Println(p.Sprintf("%8s: successfully sent %d total messages to queue", channel, total))
 			}
 
 		}
@@ -74,7 +73,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 		return
 	}
 
-	mux := sync.Mutex{}
+	//mux := sync.Mutex{}
 	for {
 		select {
 		case <-quit:
@@ -86,7 +85,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			if d == nil || len(d) == 0 {
 				continue
 			}
-			mux.Lock()
+			//mux.Lock()
 			err = ch.Publish(
 				"",
 				q.Name,
@@ -100,7 +99,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 			if exitOn(err) {
 				return
 			}
-			mux.Unlock()
+			//mux.Unlock()
 		}
 	}
 }
