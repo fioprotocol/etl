@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/dapixio/fio.etl/kafka"
-	"log"
+	"github.com/dapixio/fio.etl/logging"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,9 +12,8 @@ import (
 )
 
 func main() {
-	log.SetPrefix(" [fioetl-publisher] ")
-	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmsgprefix)
-	log.Println("starting")
+	elog, ilog, _ := logging.Setup(" [fioetl-publisher] ")
+	ilog.Println("starting")
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -25,7 +24,7 @@ func main() {
 	go func() {
 		kafka.StartProducers(ctx, errs, kQuit)
 		wg.Done()
-		log.Println("kafka publishers have exited")
+		ilog.Println("kafka publishers have exited")
 	}()
 
 	sigc := make(chan os.Signal, 1)
@@ -39,7 +38,7 @@ func main() {
 	for {
 		select {
 		case s := <-sigc:
-			log.Println("exiting on signal ", s)
+			elog.Println("exiting on signal ", s)
 			cancel()
 			go func() {
 				<-time.After(5 * time.Second)
@@ -48,7 +47,7 @@ func main() {
 			wg.Wait()
 			os.Exit(0)
 		case e := <-errs:
-			log.Println(e)
+			elog.Println(e)
 			cancel()
 			go func() {
 				<-time.After(5 * time.Second)
@@ -57,7 +56,7 @@ func main() {
 			wg.Wait()
 			os.Exit(1)
 		case <-kQuit:
-			log.Println("kafka producers exited, quitting")
+			ilog.Println("kafka producers exited, quitting")
 			os.Exit(0)
 		}
 	}

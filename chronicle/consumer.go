@@ -326,7 +326,9 @@ func (c *Consumer) consume() error {
 				return
 			case <-printStat.C:
 				dlog.Println(p.Sprintf("Block: %d, processed %d MiB", c.Seen, size/1024/1024))
-				dlog.Println(p.Sprintf("%d  routines are waiting for buffer", currentMsgs))
+				if currentMsgs > 0 {
+					dlog.Println(p.Sprintf("%d  routines are waiting for buffer", currentMsgs))
+				}
 			case s := <-sizes:
 				size += s
 			case m := <-counterChan:
