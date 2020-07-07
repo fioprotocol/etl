@@ -94,26 +94,6 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 
 	iwg := sync.WaitGroup{}
 	mux := deadlock.Mutex{}
-	send := func(pc *pChan, producer sarama.AsyncProducer) {
-		if pc.payload == nil || producer == nil {
-			return
-		}
-		mux.Lock()
-		defer mux.Unlock()
-		b := bytes.NewBuffer(nil)
-		gz := gzip.NewWriter(b)
-		_, err := gz.Write(pc.payload)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		_ = gz.Close()
-
-		producer.Input() <- &sarama.ProducerMessage{
-			Topic: pc.topic,
-			Value: sarama.ByteEncoder(b.Bytes()),
-		}
-	}
 
 	cfgMux := deadlock.Mutex{}
 	publisher := func(c chan *pChan) {
@@ -148,8 +128,25 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 			case <-ctx.Done():
 				log.Println("kafka producer exiting")
 				return
-			case msg := <-c:
-				send(msg, producer)
+			case pc := <-c:
+				if pc.payload == nil || producer == nil {
+					continue
+				}
+				mux.Lock()
+				b := bytes.NewBuffer(nil)
+				gz := gzip.NewWriter(b)
+				_, err := gz.Write(pc.payload)
+				if err != nil {
+					log.Println(err)
+					mux.Unlock()
+					continue
+				}
+				_ = gz.Close()
+				producer.Input() <- &sarama.ProducerMessage{
+					Topic: pc.topic,
+					Value: sarama.ByteEncoder(b.Bytes()),
+				}
+				mux.Unlock()
 			}
 		}
 	}
