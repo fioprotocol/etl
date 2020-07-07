@@ -176,7 +176,7 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		case <-memTick.C:
 			// looks like kafka has a mem leak, or I am missing a step that prevents a resource leak, bad workaround follows, stinky!
 			runtime.ReadMemStats(memStats)
-			log.Println(p.Sprintf("heap usage: %d MiB"), memStats.HeapInuse * 1024 * 1024)
+			log.Println(p.Sprintf("heap usage: %d MiB", memStats.HeapInuse / 1024 * 1024))
 			if memStats.HeapInuse > 2 * 1024 * 1024 * 1024 {
 				log.Println("Exceeded 2gb heap, restarting publisher")
 				cCancel()
