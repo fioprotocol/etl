@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -157,6 +158,8 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		go publisher(c)
 	}
 
+	memStats := &runtime.MemStats{}
+	memTick := time.NewTicker(3*time.Minute)
 	printTick := time.NewTicker(30*time.Second)
 	p := message.NewPrinter(language.AmericanEnglish)
 	var sentRow, sentBlock, sentTx, sentMisc uint64
@@ -203,6 +206,15 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 			return
 		case <-printTick.C:
 			log.Println(p.Sprintf("kafka publisher has sent: block %d, row %d, tx %d, misc %d", sentBlock, sentRow, sentTx, sentMisc))
+		case <-memTick.C:
+			// looks like kafka has a mem leak, or I am missing a step that prevents a resource leak, bad workaround follows, stinky!
+			runtime.ReadMemStats(memStats)
+			if memStats.HeapInuse > 2 * 1024 * 1024 * 1024 {
+				log.Println("Exceeded 2gb heap, restarting publisher")
+				cCancel()
+				close(done)
+				return
+			}
 		case <-blockQuit:
 			cCancel()
 		case <-rowQuit:
