@@ -13,9 +13,9 @@ var (
 	dlog *log.Logger
 )
 
-func init()  {
+func init() {
 	if os.Getenv("DEBUG") == "true" {
 		sarama.Logger = log.New(os.Stderr, "[sarama] ", log.Lshortfile|log.LstdFlags)
 	}
-	elog, ilog, dlog =  logging.Setup("[fioetl-kafka] ")
+	elog, ilog, dlog = logging.Setup("[fioetl-kafka] ")
 }

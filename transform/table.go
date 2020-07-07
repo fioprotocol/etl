@@ -10,12 +10,12 @@ import (
 )
 
 type TableData struct {
-	Id string `json:"id"`
-	RecordType string `json:"record_type"`
-	BlockNum       interface{}        `json:"block_num"`
+	Id             string       `json:"id"`
+	RecordType     string       `json:"record_type"`
+	BlockNum       interface{}  `json:"block_num"`
 	BlockTimeStamp eos.JSONTime `json:"block_timestamp"`
-	Added          interface{}        `json:"added"`
-	Kvo            *Kvo                `json:"kvo"`
+	Added          interface{}  `json:"added"`
+	Kvo            *Kvo         `json:"kvo"`
 }
 
 type Kvo struct {

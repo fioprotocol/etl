@@ -13,7 +13,7 @@ import (
 
 func main() {
 	log.SetPrefix(" [fioetl-publisher] ")
-	log.SetFlags(log.LstdFlags|log.Lshortfile|log.Lmsgprefix)
+	log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmsgprefix)
 	log.Println("starting")
 
 	wg := sync.WaitGroup{}
@@ -42,7 +42,7 @@ func main() {
 			log.Println("exiting on signal ", s)
 			cancel()
 			go func() {
-				<-time.After(5*time.Second)
+				<-time.After(5 * time.Second)
 				os.Exit(2)
 			}()
 			wg.Wait()
@@ -51,7 +51,7 @@ func main() {
 			log.Println(e)
 			cancel()
 			go func() {
-				<-time.After(5*time.Second)
+				<-time.After(5 * time.Second)
 				os.Exit(2)
 			}()
 			wg.Wait()

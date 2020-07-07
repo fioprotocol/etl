@@ -10,7 +10,7 @@ var (
 	elog *log.Logger
 )
 
-func init()  {
+func init() {
 	var err error
 	abis, err = newAbiMap()
 	if err != nil {
@@ -18,4 +18,3 @@ func init()  {
 	}
 	elog, _, _ = l.Setup("[fioetl-transform] ")
 }
-

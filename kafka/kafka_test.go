@@ -16,9 +16,9 @@ func TestKafka(t *testing.T) {
 	defer producer.Close()
 
 	p, o, err := producer.SendMessage(&sarama.ProducerMessage{
-		Topic:     "test",
-		Key:       sarama.ByteEncoder([]byte("hello")),
-		Value:     sarama.ByteEncoder([]byte("there")),
+		Topic: "test",
+		Key:   sarama.ByteEncoder([]byte("hello")),
+		Value: sarama.ByteEncoder([]byte("there")),
 	})
 	if err != nil {
 		t.Error("failed to write", err)

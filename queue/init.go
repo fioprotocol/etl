@@ -12,5 +12,5 @@ var (
 )
 
 func init() {
-	elog, ilog, dlog =  logging.Setup("[fioetl-queue] ")
+	elog, ilog, dlog = logging.Setup("[fioetl-queue] ")
 }

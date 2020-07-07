@@ -2,7 +2,7 @@ package queue
 
 /*
 	using a rabbitmq to ensure that we have a durable store for messages, this helps prevent data loss.
- */
+*/
 
 import (
 	"context"
@@ -18,7 +18,7 @@ func StartConsumer(ctx context.Context, channel string, messages chan []byte, er
 		if err != nil {
 			elog.Println(channel, " rabbit consumer: ", err)
 			close(quit)
-			errs <-err
+			errs <- err
 			return true
 		}
 		return false
@@ -65,7 +65,7 @@ func StartConsumer(ctx context.Context, channel string, messages chan []byte, er
 		select {
 		case d := <-msgs:
 			// messages should be a buffered channel, matching our worker count to prevent data loss.
-			messages <-d.Body
+			messages <- d.Body
 		case <-ctx.Done():
 			close(quit)
 			return

@@ -52,7 +52,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 		return
 	}
 
-	printTick := time.NewTicker(30*time.Second)
+	printTick := time.NewTicker(30 * time.Second)
 	var sent uint64
 	p := message.NewPrinter(language.AmericanEnglish)
 	for {
@@ -60,7 +60,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 		case <-ctx.Done():
 			close(quit)
 			return
-		case <- printTick.C:
+		case <-printTick.C:
 			dlog.Println(p.Sprintf("%8s : sent total of %d messages", channel, sent))
 		case d := <-messages:
 			if d == nil || len(d) == 0 {
@@ -71,7 +71,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 				q.Name,
 				false,
 				false,
-				amqp.Publishing {
+				amqp.Publishing{
 					ContentType: "application/octet-stream",
 					Body:        d,
 				},

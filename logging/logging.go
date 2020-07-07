@@ -6,8 +6,7 @@ import (
 	"strings"
 )
 
-
-func Setup(prefix string) (err *log.Logger, info *log.Logger, debug *log.Logger)  {
+func Setup(prefix string) (err *log.Logger, info *log.Logger, debug *log.Logger) {
 	var (
 		e *log.Logger
 		i *log.Logger

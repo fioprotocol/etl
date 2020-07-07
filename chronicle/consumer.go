@@ -23,7 +23,7 @@ import (
 
 var (
 	connected bool
-	stopped bool
+	stopped   bool
 )
 
 type Consumer struct {
@@ -133,7 +133,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		stopped = true
 		pClose()
 		c.cancel()
-		time.Sleep(2*time.Second)
+		time.Sleep(2 * time.Second)
 		os.Exit(1)
 	}
 
@@ -185,11 +185,11 @@ func (c *Consumer) consume() error {
 	waitForQueue := func() {
 		ilog.Println("waiting up to 180s for queue to empty")
 		go func() {
-			time.Sleep(180*time.Second)
+			time.Sleep(180 * time.Second)
 			c.cancel()
 		}()
 		for currentMsgs > 0 {
-			time.Sleep(100*time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 
@@ -212,7 +212,7 @@ func (c *Consumer) consume() error {
 			}
 			for currentMsgs > 256 {
 				dlog.Println("paused.")
-				time.Sleep(2*time.Second)
+				time.Sleep(2 * time.Second)
 			}
 			t, d, e = c.ws.ReadMessage()
 			if e != nil {
@@ -317,8 +317,8 @@ func (c *Consumer) consume() error {
 	}()
 
 	go func() {
-		printStat := time.NewTicker(5*time.Second)
-		t := time.NewTicker(500*time.Millisecond)
+		printStat := time.NewTicker(5 * time.Second)
+		t := time.NewTicker(500 * time.Millisecond)
 		var err error
 		for {
 			select {
@@ -359,7 +359,7 @@ func (c *Consumer) consume() error {
 			return finalErr
 		case <-alive.C:
 			// check if we aren't getting messages
-			if c.last.Before(time.Now().Add(-1 * time.Minute)) && currentMsgs == 0 {
+			if c.last.Before(time.Now().Add(-1*time.Minute)) && currentMsgs == 0 {
 				_ = c.ws.SetReadDeadline(time.Now().Add(-1 * time.Second))
 				waitForQueue()
 				c.cancel()
@@ -367,7 +367,7 @@ func (c *Consumer) consume() error {
 			}
 			// if we are taking more than 4gb of RAM, we should probably restart.
 			runtime.ReadMemStats(memStats)
-			if memStats.HeapInuse > 4 * 1024 * 1024 * 1024 {
+			if memStats.HeapInuse > 4*1024*1024*1024 {
 				stopped = true
 				elog.Println("Exceeded 4gb heap, clearing existing queue")
 				waitForQueue()

@@ -11,13 +11,13 @@ import (
 )
 
 type AbiUpdate struct {
-	Id string `json:"id"`
-	RecordType string `json:"record_type"`
-	BlockNum interface{} `json:"block_num"`
-	BlockTimestamp string `json:"block_timestamp"`
-	Account string `json:"account"`
-	Abi json.RawMessage `json:"abi"`
-	AbiBytes string `json:"abi_bytes"`
+	Id             string          `json:"id"`
+	RecordType     string          `json:"record_type"`
+	BlockNum       interface{}     `json:"block_num"`
+	BlockTimestamp string          `json:"block_timestamp"`
+	Account        string          `json:"account"`
+	Abi            json.RawMessage `json:"abi"`
+	AbiBytes       string          `json:"abi_bytes"`
 }
 
 func Abi(b []byte) (abi json.RawMessage, err error) {

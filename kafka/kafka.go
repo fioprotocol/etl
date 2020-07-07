@@ -19,9 +19,9 @@ import (
 )
 
 type Settings struct {
-	BrokerList []string `yaml:"broker_list"`
-	SaslUser string `yaml:"sasl_user"`
-	SaslPassword string `yaml:"sasl_password"`
+	BrokerList   []string `yaml:"broker_list"`
+	SaslUser     string   `yaml:"sasl_user"`
+	SaslPassword string   `yaml:"sasl_password"`
 }
 
 var brokerList []string
@@ -158,8 +158,8 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 	}
 
 	memStats := &runtime.MemStats{}
-	memTick := time.NewTicker(3*time.Minute)
-	printTick := time.NewTicker(30*time.Second)
+	memTick := time.NewTicker(3 * time.Minute)
+	printTick := time.NewTicker(30 * time.Second)
 	p := message.NewPrinter(language.AmericanEnglish)
 	var sentRow, sentBlock, sentTx, sentMisc uint64
 	for {
@@ -175,8 +175,8 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		case <-memTick.C:
 			// looks like kafka has a mem leak, or I am missing a step that prevents a resource leak, bad workaround follows, stinky!
 			runtime.ReadMemStats(memStats)
-			dlog.Println(p.Sprintf("heap usage: %d MiB", memStats.HeapInuse / (1024 * 1024)))
-			if memStats.HeapInuse > 2 * 1024 * 1024 * 1024 {
+			dlog.Println(p.Sprintf("heap usage: %d MiB", memStats.HeapInuse/(1024*1024)))
+			if memStats.HeapInuse > 2*1024*1024*1024 {
 				elog.Println("Exceeded 2gb heap, restarting publisher")
 				cCancel()
 				close(done)
@@ -193,34 +193,34 @@ func StartProducers(ctx context.Context, errs chan error, done chan interface{})
 		case r := <-rowChan:
 			// use a closure to dereference
 			sentRow += 1
-			func(d []byte){
+			func(d []byte) {
 				c <- &pChan{
 					payload: d,
-					topic: "row",
+					topic:   "row",
 				}
 			}(r)
 		case header := <-blockChan:
 			sentBlock += 1
-			func(d []byte){
+			func(d []byte) {
 				c <- &pChan{
 					payload: d,
-					topic: "block",
+					topic:   "block",
 				}
 			}(header)
 		case tx := <-txChan:
 			sentTx += 1
-			func(d []byte){
+			func(d []byte) {
 				c <- &pChan{
 					payload: d,
-					topic: "tx",
+					topic:   "tx",
 				}
 			}(tx)
 		case account := <-miscChan:
 			sentMisc += 1
-			func(d []byte){
+			func(d []byte) {
 				c <- &pChan{
 					payload: d,
-					topic: "misc",
+					topic:   "misc",
 				}
 			}(account)
 		}

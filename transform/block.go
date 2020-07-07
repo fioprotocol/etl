@@ -9,8 +9,6 @@ import (
 	"github.com/fioprotocol/fio-go/imports/eos-go"
 	"github.com/fioprotocol/fio-go/imports/eos-go/ecc"
 	"github.com/sasha-s/go-deadlock"
-	l "github.com/dapixio/fio.etl/logging"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -22,33 +20,32 @@ type MsgData struct {
 
 // Schedule duplicates an eos.OptionalProducerSchedule but adds some metadata
 type Schedule struct {
-	Id string `json:"id"`
-	RecordType string `json:"record_type"`
+	Id               string `json:"id"`
+	RecordType       string `json:"record_type"`
 	ProducerSchedule `json:"producer_schedule"`
-	BlockNum interface{} `json:"block_num"`
-	BlockTime time.Time `json:"block_time"`
+	BlockNum         interface{} `json:"block_num"`
+	BlockTime        time.Time   `json:"block_time"`
 }
 
 type ProducerSchedule struct {
-	Version   interface{}        `json:"version"`
+	Version   interface{}       `json:"version"`
 	Producers []eos.ProducerKey `json:"producers"`
 }
 
-
 // FullBlock duplicates eos.SignedBlock because the provided json has metadata
 type FullBlock struct {
-	RecordType string `json:"record_type"`
-	BlockTime time.Time `json:"block_time"`
-	Block SignedBlock `json:"block"`
-	BlockNum interface{} `json:"block_num"`
-	BlockId string `json:"id"`
+	RecordType string      `json:"record_type"`
+	BlockTime  time.Time   `json:"block_time"`
+	Block      SignedBlock `json:"block"`
+	BlockNum   interface{} `json:"block_num"`
+	BlockId    string      `json:"id"`
 }
 
 type SignedBlock struct {
 	RecordType string `json:"record_type"`
 	SignedBlockHeader
 	Transactions    []json.RawMessage `json:"transactions"`
-	BlockExtensions json.RawMessage         `json:"block_extensions"`
+	BlockExtensions json.RawMessage   `json:"block_extensions"`
 }
 
 type SignedBlockHeader struct {
@@ -62,15 +59,15 @@ type Extension struct {
 }
 
 type BlockHeader struct {
-	Timestamp        eos.BlockTimestamp            `json:"timestamp"`
-	Producer         eos.AccountName               `json:"producer"`
-	Confirmed        interface{}                    `json:"confirmed"`
-	Previous         eos.Checksum256               `json:"previous"`
-	TransactionMRoot eos.Checksum256               `json:"transaction_mroot"`
-	ActionMRoot      eos.Checksum256               `json:"action_mroot"`
-	ScheduleVersion  interface{}                    `json:"schedule_version"`
-	NewProducers     *ProducerSchedule `json:"new_producers" eos:"optional"`
-	HeaderExtensions []*Extension              `json:"header_extensions"`
+	Timestamp        eos.BlockTimestamp `json:"timestamp"`
+	Producer         eos.AccountName    `json:"producer"`
+	Confirmed        interface{}        `json:"confirmed"`
+	Previous         eos.Checksum256    `json:"previous"`
+	TransactionMRoot eos.Checksum256    `json:"transaction_mroot"`
+	ActionMRoot      eos.Checksum256    `json:"action_mroot"`
+	ScheduleVersion  interface{}        `json:"schedule_version"`
+	NewProducers     *ProducerSchedule  `json:"new_producers" eos:"optional"`
+	HeaderExtensions []*Extension       `json:"header_extensions"`
 	deadlock.Mutex
 }
 
@@ -136,8 +133,8 @@ func Block(b []byte) (header json.RawMessage, schedule json.RawMessage, err erro
 	block.BlockTime = block.Block.BlockHeader.Timestamp.Time
 	if block.Block.NewProducers != nil {
 		sched := Schedule{
-			RecordType: "schedule",
-			Id: fmt.Sprintf("sched-%v-%v", block.BlockNum,block.Block.Timestamp.Time),
+			RecordType:       "schedule",
+			Id:               fmt.Sprintf("sched-%v-%v", block.BlockNum, block.Block.Timestamp.Time),
 			ProducerSchedule: *block.Block.NewProducers,
 			BlockNum:         block.BlockNum.(int64),
 			BlockTime:        block.Block.Timestamp.Time,
@@ -152,13 +149,12 @@ func Block(b []byte) (header json.RawMessage, schedule json.RawMessage, err erro
 	return
 }
 
-
 type TraceResult struct {
-	Id string `json:"id"`
-	RecordType string `json:"record_type"`
-	BlockNum interface{} `json:"block_num"`
-	BlockTime string `json:"block_timestamp"`
-	Trace json.RawMessage `json:"trace"`
+	Id         string          `json:"id"`
+	RecordType string          `json:"record_type"`
+	BlockNum   interface{}     `json:"block_num"`
+	BlockTime  string          `json:"block_timestamp"`
+	Trace      json.RawMessage `json:"trace"`
 }
 
 type traceId struct {
@@ -190,11 +186,11 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 }
 
 type AccountUpdate struct {
-	Id string `json:"id"`
-	RecordType string `json:"record_type"`
-	BlockNum interface{} `json:"block_num"`
-	BlockTime string `json:"block_timestamp"`
-	Data json.RawMessage `json:"data"`
+	Id         string          `json:"id"`
+	RecordType string          `json:"record_type"`
+	BlockNum   interface{}     `json:"block_num"`
+	BlockTime  string          `json:"block_timestamp"`
+	Data       json.RawMessage `json:"data"`
 }
 
 func Account(b []byte, kind string) (trace json.RawMessage, err error) {
@@ -222,4 +218,3 @@ type BlockFinished struct {
 		BlockNum string `json:"block_num"`
 	} `json:"data"`
 }
-

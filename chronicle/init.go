@@ -11,7 +11,6 @@ var (
 	dlog *log.Logger
 )
 
-func init()  {
-	elog, ilog, dlog =  logging.Setup("[fioetl-consumer] ")
+func init() {
+	elog, ilog, dlog = logging.Setup("[fioetl-consumer] ")
 }
-
