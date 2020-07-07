@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/streadway/amqp"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"log"
 	"sync"
+	"time"
 )
 
 func StartProducer(ctx context.Context, channel string, messages chan []byte, errs chan error, quit chan interface{}) {
@@ -39,17 +42,23 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 	}
 	defer ch.Close()
 
-	ack := ch.NotifyPublish(make(chan amqp.Confirmation))
-	ch.Confirm(true)
-
+	ack, nack := ch.NotifyConfirm(make(chan uint64), make(chan uint64))
 	go func() {
+		t := time.NewTicker(10*time.Second)
+		var total uint64
+		p := message.NewPrinter(language.AmericanEnglish)
 		for {
-			a := <-ack
-			if !a.Ack {
+			select {
+			case <-nack:
 				errs <- errors.New(channel + " failed to send message to queue")
 				close(quit)
 				return
+			case <-ack:
+				total += 1
+			case <- t.C:
+				log.Println(p.Sprintf("successfully sent %d total messages to queue"))
 			}
+
 		}
 	}()
 
