@@ -308,7 +308,9 @@ func (c *Consumer) consume() error {
 						counterChan <- -1
 						return
 					}
-					c.txChan <- a
+					for _, trace := range a {
+						c.txChan <- trace
+					}
 					counterChan <- -1
 				}(d)
 			}
