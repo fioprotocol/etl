@@ -2,17 +2,43 @@ package transform
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 )
 
 type TraceResult struct {
-	Id         uint64          `json:"id"`
-	TxId       string          `json:"txid"`
-	RecordType string          `json:"record_type"`
-	BlockNum   interface{}     `json:"block_num"`
-	BlockTime  string          `json:"block_timestamp"`
-	Trace      map[string]interface{} `json:"trace"`
+	Id         string      `json:"id"`
+	RecordType string      `json:"record_type"`
+	BlockNum   interface{} `json:"block_num"`
+	BlockTime  string      `json:"block_timestamp"`
+	Trace      FullTrace   `json:"trace"`
+}
+
+type FullTrace struct {
+	NetUsageWords   string                 `json:"net_usage_words"`
+	Scheduled       string                 `json:"scheduled"`
+	Partial         map[string]interface{} `json:"partial"`
+	AccountRamDelta string                 `json:"account_ram_delta"`
+	NetUsage        string                 `json:"net_usage"`
+	Elapsed         string                 `json:"elapsed"`
+	ErrorCode       interface{}            `json:"error_code"`
+	CpuUsageUs      string                 `json:"cpu_usage_us"`
+	FailedDtrxTrace interface{}            `json:"failed_dtrx_trace"`
+	Except          string                 `json:"except"`
+	Status          string                 `json:"status"`
+	Id              string                 `json:"id"`
+	ActionTraces    []struct {
+		ContextFree          string                 `json:"context_free"`
+		Act                  map[string]interface{} `json:"act"`
+		AccountRamDeltas     interface{}            `json:"account_ram_deltas"`
+		ActionOrdinal        string                 `json:"action_ordinal"`
+		Elapsed              string                 `json:"elapsed"`
+		ErrorCode            string                 `json:"error_code"`
+		Except               string                 `json:"except"`
+		Receiver             string                 `json:"receiver"`
+		CreatorActionOrdinal string                 `json:"creator_action_ordinal"`
+		Receipt              map[string]interface{} `json:"receipt"`
+		Console              string                 `json:"console"`
+	} `json:"action_traces"`
 }
 
 type TraceActions struct {
@@ -36,7 +62,7 @@ type traceId struct {
 	} `json:"trace"`
 }
 
-func Trace(b []byte) (traces []json.RawMessage, err error) {
+func Trace(b []byte) (trace json.RawMessage, err error) {
 	msg := &MsgData{}
 	err = json.Unmarshal(b, msg)
 	if err != nil || msg.Data == nil {
@@ -53,37 +79,18 @@ func Trace(b []byte) (traces []json.RawMessage, err error) {
 	if err != nil {
 		return
 	}
-	traces = make([]json.RawMessage, 0)
-	for _, t := range ta.Trace.ActionTraces {
-		tr := &TraceResult{}
-		err = json.Unmarshal(msg.Data, tr)
-		if err != nil {
-			return
-		}
-		seq := &TraceSequence{}
-		err = json.Unmarshal(t, seq)
-		if err != nil {
-			return
-		}
-		tr.Id, err = strconv.ParseUint(seq.Receipt.GlobalSequence, 10, 64)
-		if err != nil {
-			return
-		}
-		tr.TxId = id.Trace.Id
-		tr.BlockNum, _ = strconv.ParseUint(tr.BlockNum.(string), 10, 32)
-		tr.RecordType = "trace"
-		tr.Trace["action_traces"] = t
-		if seq.Act.Data != nil {
-			if seq.Act.Data.([]byte)[0] == '"' {
-				seq.Act.Data = []byte(fmt.Sprintf(`{"raw":%s}`, seq.Act.Data.(string)))
-			}
-		}
-		trace := make([]byte, 0)
-		trace, err = json.Marshal(tr)
-		if err != nil {
-			return
-		}
-		traces = append(traces, trace)
+	tr := &TraceResult{}
+	err = json.Unmarshal(msg.Data, tr)
+	if err != nil {
+		return
 	}
-	return
+	tr.Id = id.Trace.Id
+	tr.BlockNum, _ = strconv.ParseUint(tr.BlockNum.(string), 10, 32)
+	tr.RecordType = "trace"
+	for _, t := range tr.Trace.ActionTraces {
+		if s, ok := t.Act["data"].(string); ok {
+			t.Act["data"] = map[string]string{"raw": s}
+		}
+	}
+	return json.Marshal(tr)
 }
