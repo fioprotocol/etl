@@ -41,42 +41,10 @@ type FullTrace struct {
 	} `json:"action_traces"`
 }
 
-type TraceActions struct {
-	Trace struct {
-		ActionTraces []json.RawMessage `json:"action_traces"`
-	} `json:"trace"`
-}
-
-type TraceSequence struct {
-	Receipt struct {
-		GlobalSequence string `json:"global_sequence"`
-	} `json:"receipt"`
-	Act struct {
-		Data interface{} `json:"data"`
-	} `json:"act"`
-}
-
-type traceId struct {
-	Trace struct {
-		Id string `json:"id"`
-	} `json:"trace"`
-}
-
 func Trace(b []byte) (trace json.RawMessage, err error) {
 	msg := &MsgData{}
 	err = json.Unmarshal(b, msg)
 	if err != nil || msg.Data == nil {
-		return
-	}
-	id := &traceId{}
-	err = json.Unmarshal(msg.Data, id)
-	if err != nil {
-		return
-	}
-
-	ta := &TraceActions{}
-	err = json.Unmarshal(msg.Data, ta)
-	if err != nil {
 		return
 	}
 	tr := &TraceResult{}
@@ -84,12 +52,21 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 	if err != nil {
 		return
 	}
-	tr.Id = id.Trace.Id
+	tr.Id = tr.Trace.Id
 	tr.BlockNum, _ = strconv.ParseUint(tr.BlockNum.(string), 10, 32)
 	tr.RecordType = "trace"
 	for _, t := range tr.Trace.ActionTraces {
 		if s, ok := t.Act["data"].(string); ok {
 			t.Act["data"] = map[string]string{"raw": s}
+			continue
+		}
+		if msi, ok := t.Act["data"].(map[string]interface{}); ok {
+			if msi["owner"] == nil {
+				continue
+			}
+			if s, ok := msi["owner"].(string); ok {
+				msi["owner"] = map[string]string{"data":s}
+			}
 		}
 	}
 	return json.Marshal(tr)
