@@ -44,7 +44,7 @@ type FullBlock struct {
 type SignedBlock struct {
 	RecordType string `json:"record_type"`
 	SignedBlockHeader
-	Transactions    []json.RawMessage `json:"transactions"`
+	Transactions    []map[string]interface{} `json:"transactions"`
 	BlockExtensions json.RawMessage   `json:"block_extensions"`
 }
 
@@ -131,6 +131,11 @@ func Block(b []byte) (header json.RawMessage, schedule json.RawMessage, err erro
 	block.BlockNum, _ = strconv.ParseInt(block.BlockNum.(string), 10, 64)
 	block.BlockId, _ = block.Block.BlockHeader.BlockID()
 	block.BlockTime = block.Block.BlockHeader.Timestamp.Time
+	for _, trx := range block.Block.Transactions {
+		if s, ok := trx["trx"].(string); ok {
+			trx["trx"] = map[string]string{"bytes": s}
+		}
+	}
 	if block.Block.NewProducers != nil {
 		sched := Schedule{
 			RecordType:       "schedule",
