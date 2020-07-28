@@ -21,8 +21,8 @@ services:
       - EXP_WS_PATH=/chronicle
       - EXP_WS_MAX_QEUEU=10000
       - IRREVERSIBLE_ONLY=true
-    stop_grace_period: 1m30s
     restart: always
+    stop_grace_period: 1m30s
     depends_on:
       - fioetl
 
@@ -30,8 +30,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-publisher
-    stop_grace_period: 1m30s
     restart: always
+    stop_grace_period: 1m30s
     depends_on:
       - rabbit
 
@@ -41,14 +41,18 @@ services:
       dockerfile: Dockerfile-consumer
     expose:
       - "8844"
-    stop_grace_period: 1m30s
     restart: always
+    environment:
+      - HOST=<**your history node here**> #ip address or hostname of nodeos
+      - FALLBACK_PORT=8888 #port number for chain_plugin API, used only if an error getting block id from hash of block header
+    stop_grace_period: 1m30s
     depends_on:
       - rabbit
 
   rabbit:
     image: "rabbitmq:latest"
     restart: always
+    stop_grace_period: 1m30s
     volumes:
       - type: volume
         source: rabbit-data
