@@ -24,12 +24,12 @@ type MsgData struct {
 
 // Schedule duplicates an eos.OptionalProducerSchedule but adds some metadata
 type Schedule struct {
-	Id               string                 `json:"id"`
-	RecordType       string                 `json:"record_type"`
-	Producers     []ProducerKeyString    `json:"producers"`
-	ScheduleVersion interface{} `json:"schedule"`
-	BlockNum         interface{}            `json:"block_num"`
-	BlockTime        time.Time              `json:"block_time"`
+	Id              string              `json:"id"`
+	RecordType      string              `json:"record_type"`
+	Producers       []ProducerKeyString `json:"producers"`
+	ScheduleVersion interface{}         `json:"schedule"`
+	BlockNum        interface{}         `json:"block_num"`
+	BlockTime       time.Time           `json:"block_time"`
 }
 
 type ProducerSchedule struct {
@@ -233,12 +233,12 @@ func Block(b []byte, fallbackUrl string) (header json.RawMessage, schedule json.
 	}
 	if block.Block.NewProducers != nil {
 		sched := Schedule{
-			RecordType:       "schedule",
-			Id:               fmt.Sprintf("sched-%v-%v", block.BlockNum, block.Block.Timestamp.Time),
-			Producers:     optProducers,
+			RecordType:      "schedule",
+			Id:              fmt.Sprintf("sched-%v-%v", block.BlockNum, block.Block.Timestamp.Time),
+			Producers:       optProducers,
 			ScheduleVersion: block.Block.NewProducers["version"],
-			BlockNum:         block.BlockNum.(int64),
-			BlockTime:        block.Block.Timestamp.Time,
+			BlockNum:        block.BlockNum.(int64),
+			BlockTime:       block.Block.Timestamp.Time,
 		}
 		if len(optProducers) > 0 {
 			block.Block.NewProducers["producers"] = optProducers

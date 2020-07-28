@@ -65,7 +65,7 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 				continue
 			}
 			if s, ok := msi["owner"].(string); ok {
-				msi["owner"] = map[string]string{"data":s}
+				msi["owner"] = map[string]string{"data": s}
 			}
 		}
 	}

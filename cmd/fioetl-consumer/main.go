@@ -16,4 +16,3 @@ func main() {
 	router.HandleFunc("/chronicle", c.Handler)
 	elog.Fatal(http.ListenAndServe(":8844", router))
 }
-

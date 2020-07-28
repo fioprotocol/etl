@@ -205,7 +205,7 @@ func (c *Consumer) consume() error {
 		c.wg.Done()
 		wgMux.Unlock()
 	}
-	fallback := "http://"+os.Getenv("HOST")+":"+os.Getenv("FALLBACK_PORT")
+	fallback := "http://" + os.Getenv("HOST") + ":" + os.Getenv("FALLBACK_PORT")
 	go func() {
 		for {
 			if stopped {
