@@ -205,6 +205,7 @@ func (c *Consumer) consume() error {
 		c.wg.Done()
 		wgMux.Unlock()
 	}
+	fallback := "http://"+os.Getenv("HOST")+":"+os.Getenv("FALLBACK_PORT")
 	go func() {
 		for {
 			if stopped {
@@ -256,7 +257,7 @@ func (c *Consumer) consume() error {
 				go func(data []byte) {
 					counterChan <- 1
 					defer wgDone()
-					a, b, e := transform.Block(data)
+					a, b, e := transform.Block(data, fallback)
 					if e != nil {
 						elog.Println(e)
 					}

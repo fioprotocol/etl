@@ -6,9 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/fioprotocol/fio-go"
 	"github.com/fioprotocol/fio-go/imports/eos-go"
 	"github.com/fioprotocol/fio-go/imports/eos-go/ecc"
+	"github.com/mr-tron/base58"
 	"github.com/sasha-s/go-deadlock"
+	"golang.org/x/crypto/ripemd160"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -20,16 +24,27 @@ type MsgData struct {
 
 // Schedule duplicates an eos.OptionalProducerSchedule but adds some metadata
 type Schedule struct {
-	Id               string `json:"id"`
-	RecordType       string `json:"record_type"`
-	ProducerSchedule `json:"producer_schedule"`
-	BlockNum         interface{} `json:"block_num"`
-	BlockTime        time.Time   `json:"block_time"`
+	Id               string                 `json:"id"`
+	RecordType       string                 `json:"record_type"`
+	Producers     []ProducerKeyString    `json:"producers"`
+	ScheduleVersion interface{} `json:"schedule"`
+	BlockNum         interface{}            `json:"block_num"`
+	BlockTime        time.Time              `json:"block_time"`
 }
 
 type ProducerSchedule struct {
 	Version   interface{}       `json:"version"`
 	Producers []eos.ProducerKey `json:"producers"`
+}
+
+type ProducerScheduleString struct {
+	Version   uint32              `json:"version"`
+	Producers []ProducerKeyString `json:"producers"`
+}
+
+type ProducerKeyString struct {
+	AccountName     string `json:"producer_name"`
+	BlockSigningKey string `json:"block_signing_key"`
 }
 
 // FullBlock duplicates eos.SignedBlock because the provided json has metadata
@@ -45,7 +60,7 @@ type SignedBlock struct {
 	RecordType string `json:"record_type"`
 	SignedBlockHeader
 	Transactions    []map[string]interface{} `json:"transactions"`
-	BlockExtensions json.RawMessage   `json:"block_extensions"`
+	BlockExtensions json.RawMessage          `json:"block_extensions"`
 }
 
 type SignedBlockHeader struct {
@@ -66,16 +81,38 @@ type BlockHeader struct {
 	TransactionMRoot eos.Checksum256    `json:"transaction_mroot"`
 	ActionMRoot      eos.Checksum256    `json:"action_mroot"`
 	ScheduleVersion  interface{}        `json:"schedule_version"`
-	NewProducers     *ProducerSchedule  `json:"new_producers" eos:"optional"`
-	HeaderExtensions []*Extension       `json:"header_extensions"`
+	//NewProducers     *ProducerSchedule  `json:"new_producers" eos:"optional"`
+	NewProducers     map[string]interface{} `json:"new_producers" eos:"optional"`
+	HeaderExtensions []*Extension           `json:"header_extensions"`
 	deadlock.Mutex
+}
+
+// BadK1SumToPub handles an issue where we are getting invalid checksums on public keys
+func BadK1SumToPub(pk string) (ecc.PublicKey, string, error) {
+	// strip PUB_K1_ prefix, convert to []byte
+	bin, err := base58.Decode(pk[7:])
+	if err != nil {
+		return ecc.PublicKey{}, "", err
+	}
+
+	// build a new *valid* checksum
+	h := ripemd160.New()
+	h.Write(bin[:len(bin)-4])
+	sum := h.Sum(nil)
+
+	// convert to string with FIO prefix and new checksum
+	pub, err := ecc.NewPublicKey("FIO" + base58.Encode(append(bin[:len(bin)-4], sum[:4]...)))
+	if err != nil {
+		return ecc.PublicKey{}, "", err
+	}
+	return pub, "FIO" + base58.Encode(append(bin[:len(bin)-4], sum[:4]...)), err
 }
 
 func (b *BlockHeader) BlockNumber() uint32 {
 	return binary.BigEndian.Uint32(b.Previous[:4]) + 1
 }
 
-func (b *BlockHeader) BlockID() (string, error) {
+func (b *BlockHeader) BlockID() (string, []ProducerKeyString, error) {
 	b.Lock()
 	defer b.Unlock()
 	confirmed, _ := strconv.ParseUint(b.Confirmed.(string), 10, 16)
@@ -83,11 +120,43 @@ func (b *BlockHeader) BlockID() (string, error) {
 	sv, _ := strconv.ParseUint(b.ScheduleVersion.(string), 10, 32)
 	b.ScheduleVersion = uint32(sv)
 	np := &eos.OptionalProducerSchedule{}
+	producerList := make([]eos.ProducerKey, 0)
+	newProds := make([]ProducerKeyString, 0)
 	if b.NewProducers != nil {
-		v, _ := strconv.ParseUint(b.NewProducers.Version.(string), 10, 32)
-		b.NewProducers.Version = uint32(v)
-		np.Version = b.NewProducers.Version.(uint32)
-		np.Producers = b.NewProducers.Producers
+		v, _ := strconv.ParseUint(b.NewProducers["version"].(string), 10, 32)
+		b.NewProducers["version"] = uint32(v)
+		np.Version = uint32(v)
+		npb, err := json.Marshal(b.NewProducers["producers"])
+		if err == nil {
+			e := json.Unmarshal(npb, &newProds)
+			if e != nil {
+				elog.Println(e)
+				return "", nil, e
+			}
+			for i, prod := range newProds {
+				// since we get PUB_K1 keys, this will force them to the short format
+				pub, _, err := BadK1SumToPub(prod.BlockSigningKey)
+				if err != nil {
+					elog.Println(err)
+					continue
+				}
+				newProds[i].BlockSigningKey = pub.String()
+				producerList = append(producerList, eos.ProducerKey{
+					AccountName:     eos.AccountName(prod.AccountName),
+					BlockSigningKey: pub,
+				})
+			}
+		} else {
+			elog.Println(err)
+			return "", nil, err
+		}
+		// has to be in order, remember we came from a map...
+		sort.Slice(producerList, func(i, j int) bool {
+			in, _ := eos.StringToName(string(producerList[i].AccountName))
+			jn, _ := eos.StringToName(string(producerList[j].AccountName))
+			return in < jn
+		})
+		np.Producers = producerList
 	} else {
 		np = nil
 	}
@@ -105,18 +174,18 @@ func (b *BlockHeader) BlockID() (string, error) {
 
 	cereal, err := eos.MarshalBinary(ebh)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	h := sha256.New()
 	_, _ = h.Write(cereal)
 	hashed := h.Sum(nil)
 	binary.BigEndian.PutUint32(hashed, b.BlockNumber())
-	return hex.EncodeToString(hashed), nil
+	return hex.EncodeToString(hashed), newProds, nil
 }
 
 // Block splits a block into the header and a schedule (if present), it also calculates block number and id
-func Block(b []byte) (header json.RawMessage, schedule json.RawMessage, err error) {
+func Block(b []byte, fallbackUrl string) (header json.RawMessage, schedule json.RawMessage, err error) {
 	msg := &MsgData{}
 	err = json.Unmarshal(b, msg)
 	if err != nil || msg.Data == nil {
@@ -129,7 +198,33 @@ func Block(b []byte) (header json.RawMessage, schedule json.RawMessage, err erro
 	}
 	block.RecordType = "block"
 	block.BlockNum, _ = strconv.ParseInt(block.BlockNum.(string), 10, 64)
-	block.BlockId, _ = block.Block.BlockHeader.BlockID()
+	optProducers := make([]ProducerKeyString, 0)
+	block.BlockId, optProducers, err = block.Block.BlockHeader.BlockID()
+	if err != nil || block.BlockId == "" {
+		func() {
+			elog.Printf("ERROR: did not get block id, falling back to api on %s to get block id\n", fallbackUrl)
+			api, _, err := fio.NewConnection(nil, fallbackUrl)
+			if err != nil {
+				elog.Println(err)
+				return
+			}
+			gbn, err := api.GetBlockByNum(block.BlockNum.(uint32))
+			if err != nil {
+				elog.Println(err)
+				return
+			}
+			bid, err := gbn.BlockID()
+			if err != nil {
+				elog.Println(err)
+				return
+			}
+			block.BlockId = bid.String()
+		}()
+	}
+	if block.BlockId == "" {
+		block.BlockId = fmt.Sprintf("block-id-error-%v", block.BlockNum)
+		elog.Println("ERROR: could not derive a block ID for block ", block.BlockNum)
+	}
 	block.BlockTime = block.Block.BlockHeader.Timestamp.Time
 	for _, trx := range block.Block.Transactions {
 		if s, ok := trx["trx"].(string); ok {
@@ -140,9 +235,13 @@ func Block(b []byte) (header json.RawMessage, schedule json.RawMessage, err erro
 		sched := Schedule{
 			RecordType:       "schedule",
 			Id:               fmt.Sprintf("sched-%v-%v", block.BlockNum, block.Block.Timestamp.Time),
-			ProducerSchedule: *block.Block.NewProducers,
+			Producers:     optProducers,
+			ScheduleVersion: block.Block.NewProducers["version"],
 			BlockNum:         block.BlockNum.(int64),
 			BlockTime:        block.Block.Timestamp.Time,
+		}
+		if len(optProducers) > 0 {
+			block.Block.NewProducers["producers"] = optProducers
 		}
 		schedule, err = json.Marshal(&sched)
 		if err != nil {
