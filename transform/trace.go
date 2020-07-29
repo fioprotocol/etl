@@ -56,6 +56,8 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 	tr.BlockNum, _ = strconv.ParseUint(tr.BlockNum.(string), 10, 32)
 	tr.RecordType = "trace"
 	for _, t := range tr.Trace.ActionTraces {
+		t.Act = Fixup(t.Act)
+		t.Receipt = Fixup(t.Receipt)
 		if s, ok := t.Act["data"].(string); ok {
 			t.Act["data"] = map[string]string{"raw": s}
 			continue
@@ -69,20 +71,16 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 			}
 		}
 	}
-	var j []byte
-	j, err = json.Marshal(tr)
-	if err != nil {
-		elog.Println(err)
-		return nil, err
-	}
+	//var j []byte
+	return json.Marshal(tr)
 
-	// this is ugly, but universal, and should be relatively fast.... despite the multiple trips to json.Marshall
-	z := make(map[string]interface{})
-	err = json.Unmarshal(j, &z)
-	if err != nil {
-		elog.Println(err)
-		return nil, err
-	}
-	z = Fixup(z)
-	return json.Marshal(z)
+	//// this is ugly, but universal, and should be relatively fast.... despite the multiple trips to json.Marshall
+	//z := make(map[string]interface{})
+	//err = json.Unmarshal(j, &z)
+	//if err != nil {
+	//	elog.Println(err)
+	//	return nil, err
+	//}
+	//z = Fixup(z)
+	//return json.Marshal(z)
 }
