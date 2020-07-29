@@ -140,8 +140,8 @@ func BuildTrie() (intTrie *trie.Trie, floatTrie *trie.Trie, boolTrie *trie.Trie)
 		for _, row := range leafs {
 			leaf := strings.Split(row, ".")
 			for i := range leaf {
-				if !boolTrie.Has("/" + strings.Join(leaf[:i+1], "/")) {
-					err = boolTrie.Put("/"+strings.Join(leaf[:i+1], "/"), true)
+				if !t.Has("/" + strings.Join(leaf[:i+1], "/")) {
+					err = t.Put("/"+strings.Join(leaf[:i+1], "/"), true)
 					if err != nil {
 						elog.Fatal(err)
 					}
