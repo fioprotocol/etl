@@ -2,7 +2,6 @@ package transform
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/importcjj/trie-go"
 	"log"
 	"math"
@@ -45,7 +44,6 @@ func seekFor(target map[string]interface{}, leaf []string, kind string) {
 			if strings.Contains(s, "//") {
 				break
 			}
-			fmt.Println(leaf, kind, "/"+s)
 			switch kind {
 			case "int":
 				if intTrie != nil && intTrie.Has("/" + s) {
