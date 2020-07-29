@@ -17,4 +17,6 @@ func init() {
 		log.Fatal("building abi map: ", err)
 	}
 	elog, _, _ = l.Setup("[fioetl-transform] ")
+	// initialize our search trie's for type casting. Damn those strings.
+	BuildTrie()
 }

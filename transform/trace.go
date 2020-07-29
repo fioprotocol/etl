@@ -69,5 +69,20 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 			}
 		}
 	}
-	return json.Marshal(tr)
+	var j []byte
+	j, err = json.Marshal(tr)
+	if err != nil {
+		elog.Println(err)
+		return nil, err
+	}
+
+	// this is ugly, but universal, and should be relatively fast.... despite the multiple trips to json.Marshall
+	z := make(map[string]interface{})
+	err = json.Unmarshal(j, &z)
+	if err != nil {
+		elog.Println(err)
+		return nil, err
+	}
+	z = Fixup(z)
+	return json.Marshal(z)
 }
