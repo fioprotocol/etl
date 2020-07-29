@@ -26,13 +26,29 @@ func seekFor(target map[string]interface{}, leaf []string, kind string) {
 	if intTrie == nil || boolTrie == nil || floatTrie == nil {
 		intTrie, floatTrie, boolTrie = BuildTrie()
 	}
-	if intTrie == nil || boolTrie == nil || floatTrie == nil {
-		log.Fatal("trie nil!")
-	}
 	if leaf == nil {
 		leaf = make([]string, 0)
 	}
 	for k := range target {
+		s := strings.Join(append(leaf, k), "/")
+		var valid bool
+		switch kind {
+		case "int":
+			if intTrie.Has("/" + s) {
+				valid = true
+			}
+		case "float":
+			if floatTrie.Has("/" + s) {
+				valid = true
+			}
+		case "bool":
+			if boolTrie.Has("/" + s) {
+				valid = true
+			}
+		}
+		if !valid {
+			continue
+		}
 		switch target[k].(type) {
 		case nil:
 			return
@@ -46,23 +62,13 @@ func seekFor(target map[string]interface{}, leaf []string, kind string) {
 		case map[string]interface{}:
 			seekFor(target[k].(map[string]interface{}), append(leaf, k), kind)
 		default:
-			s := strings.Join(append(leaf, k), "/")
-			if strings.Contains(s, "//") {
-				break
-			}
 			switch kind {
 			case "int":
-				if intTrie != nil && intTrie.Has("/" + s) {
-					target[k] = toInt(target[k])
-				}
+				target[k] = toInt(target[k])
 			case "float":
-				if floatTrie.Has("/" + s) {
-					target[k] = toFloat(target[k])
-				}
+				target[k] = toFloat(target[k])
 			case "bool":
-				if boolTrie.Has("/" + s) {
-					target[k] = toBool(target[k])
-				}
+				target[k] = toBool(target[k])
 			}
 		}
 	}
@@ -168,8 +174,8 @@ var (
 		//`trace.scheduled`,
 	}
 	wantFloat = []string{
-		`receipt.act.data.quantity`,
 		`act.data.quantity`,
+		`data.quantity`,
 	}
 	wantInt = []string{
 		`abi_sequence`,
@@ -187,14 +193,6 @@ var (
 		`data.suf_amount`,
 		`elapsed`,
 		`global_sequence`,
-		`receipt.abi_sequence`,
-		`receipt.auth_sequence.sequence`,
-		`receipt.code_sequence`,
-		`receipt.global_sequence`,
-		`receipt.recv_sequence`,
-		`receipt.act.data.amount`,
-		`receipt.act.data.max_fee`,
-		`receipt.act.data.suf_amount`,
 		`recv_sequence`,
 	}
 )
