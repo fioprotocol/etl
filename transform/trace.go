@@ -26,19 +26,20 @@ type FullTrace struct {
 	Except          string                 `json:"except"`
 	Status          string                 `json:"status"`
 	Id              string                 `json:"id"`
-	ActionTraces    []struct {
-		ContextFree          string                 `json:"context_free"`
-		Act                  map[string]interface{} `json:"act"`
-		AccountRamDeltas     interface{}            `json:"account_ram_deltas"`
-		ActionOrdinal        string                 `json:"action_ordinal"`
-		Elapsed              string                 `json:"elapsed"`
-		ErrorCode            string                 `json:"error_code"`
-		Except               string                 `json:"except"`
-		Receiver             string                 `json:"receiver"`
-		CreatorActionOrdinal string                 `json:"creator_action_ordinal"`
-		Receipt              map[string]interface{} `json:"receipt"`
-		Console              string                 `json:"console"`
-	} `json:"action_traces"`
+	ActionTraces    []map[string]interface{} `json:"action_traces"`
+	//ActionTraces    []struct {
+	//	ContextFree          string                 `json:"context_free"`
+	//	Act                  map[string]interface{} `json:"act"`
+	//	AccountRamDeltas     interface{}            `json:"account_ram_deltas"`
+	//	ActionOrdinal        string                 `json:"action_ordinal"`
+	//	Elapsed              string                 `json:"elapsed"`
+	//	ErrorCode            string                 `json:"error_code"`
+	//	Except               string                 `json:"except"`
+	//	Receiver             string                 `json:"receiver"`
+	//	CreatorActionOrdinal string                 `json:"creator_action_ordinal"`
+	//	Receipt              map[string]interface{} `json:"receipt"`
+	//	Console              string                 `json:"console"`
+	//} `json:"action_traces"`
 }
 
 func Trace(b []byte) (trace json.RawMessage, err error) {
@@ -56,20 +57,22 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 	tr.BlockNum, _ = strconv.ParseUint(tr.BlockNum.(string), 10, 32)
 	tr.RecordType = "trace"
 	for _, t := range tr.Trace.ActionTraces {
-		if s, ok := t.Act["data"].(string); ok {
-			t.Act["data"] = map[string]string{"raw": s}
-			continue
-		}
-		if msi, ok := t.Act["data"].(map[string]interface{}); ok {
-			if msi["owner"] == nil {
-				continue
+		// act.data and act.data.owner both can present as a string, maybe it's an ABI problem?
+		// but it violates elasticsearch's schema and they won't get indexed if not a struct:
+		switch t["act"].(type) {
+		case map[string]interface{}:
+			switch t["act"].(map[string]interface{})["data"].(type) {
+			case string:
+				t["act"].(map[string]interface{})["data"] = map[string]string{"raw": t["act"].(map[string]interface{})["data"].(string)}
+			case map[string]interface{}:
+				switch t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"].(type) {
+				case string:
+					t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"] = map[string]string{"data": t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"].(string)}
+				}
 			}
-			if s, ok := msi["owner"].(string); ok {
-				msi["owner"] = map[string]string{"data": s}
-			}
 		}
-		t.Act = Fixup(t.Act)
-		t.Receipt = Fixup(t.Receipt)
+		// trie-search and replace for integer and float casts
+		t = Fixup(t)
 	}
 	return json.Marshal(tr)
 }
