@@ -36,11 +36,17 @@ func seekFor(target map[string]interface{}, leaf []string, kind string) {
 		switch target[k].(type) {
 		case nil:
 			return
+		case []interface{}:
+			for _, row := range target[k].([]interface{}) {
+				switch row.(type) {
+				case map[string]interface{}:
+					seekFor(row.(map[string]interface{}), append(leaf, k), kind)
+				}
+			}
 		case map[string]interface{}:
-			leaf = append(leaf, k)
-			seekFor(target[k].(map[string]interface{}), leaf, kind)
+			seekFor(target[k].(map[string]interface{}), append(leaf, k), kind)
 		default:
-			s := strings.Join(leaf, "/")
+			s := strings.Join(append(leaf, k), "/")
 			if strings.Contains(s, "//") {
 				break
 			}
@@ -64,7 +70,7 @@ func seekFor(target map[string]interface{}, leaf []string, kind string) {
 
 var (
 	stripNotDigit = regexp.MustCompile(`(\d+)\D*?`) // capture the first group of consecutive numbers, will chop a float
-	onlyDigit     = regexp.MustCompile(`^\d$`)
+	onlyDigit     = regexp.MustCompile(`^\d+$`)
 	isAsset       = regexp.MustCompile(` FIO$`)
 )
 
@@ -162,21 +168,33 @@ var (
 		//`trace.scheduled`,
 	}
 	wantFloat = []string{
-		`trace.action_traces.receipt.act.data.quantity`,
+		`receipt.act.data.quantity`,
+		`act.data.quantity`,
 	}
 	wantInt = []string{
+		`abi_sequence`,
+		`account_ram_deltas.delta`,
+		`act.data.amount`,
+		`act.data.max_fee`,
+		`act.data.suf_amount`,
+		`action_ordinal`,
+		`auth_sequence.sequence`,
+		`code_sequence`,
+		`creator_action_ordinal`,
 		`data.amount`,
 		`data.max_fee`,
 		`data.quantity`,
 		`data.suf_amount`,
-		`abi_sequence`,
-		`act.data.amount`,
-		`act.data.max_fee`,
-		`act.data.quantity`,
-		`act.data.suf_amount`,
-		`auth_sequence.sequence`,
-		`code_sequence`,
+		`elapsed`,
 		`global_sequence`,
+		`receipt.abi_sequence`,
+		`receipt.auth_sequence.sequence`,
+		`receipt.code_sequence`,
+		`receipt.global_sequence`,
+		`receipt.recv_sequence`,
+		`receipt.act.data.amount`,
+		`receipt.act.data.max_fee`,
+		`receipt.act.data.suf_amount`,
 		`recv_sequence`,
 	}
 )

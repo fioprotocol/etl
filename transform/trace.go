@@ -56,8 +56,6 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 	tr.BlockNum, _ = strconv.ParseUint(tr.BlockNum.(string), 10, 32)
 	tr.RecordType = "trace"
 	for _, t := range tr.Trace.ActionTraces {
-		t.Act = Fixup(t.Act)
-		t.Receipt = Fixup(t.Receipt)
 		if s, ok := t.Act["data"].(string); ok {
 			t.Act["data"] = map[string]string{"raw": s}
 			continue
@@ -70,6 +68,8 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 				msi["owner"] = map[string]string{"data": s}
 			}
 		}
+		t.Act = Fixup(t.Act)
+		t.Receipt = Fixup(t.Receipt)
 	}
 	//var j []byte
 	return json.Marshal(tr)
