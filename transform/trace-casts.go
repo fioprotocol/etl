@@ -194,6 +194,10 @@ var (
 		`elapsed`,
 		`global_sequence`,
 		`recv_sequence`,
+		`receipt.global_sequence`,
+		`receipt.code_sequence`,
+		`receipt.recv_sequence`,
+		`receipt.abi_sequence`,
 	}
 )
 

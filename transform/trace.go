@@ -63,11 +63,11 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 		case map[string]interface{}:
 			switch t["act"].(map[string]interface{})["data"].(type) {
 			case string:
-				t["act"].(map[string]interface{})["data"] = map[string]string{"raw": t["act"].(map[string]interface{})["data"].(string)}
+				t["act"].(map[string]interface{})["data"] = map[string]interface{}{"raw": t["act"].(map[string]interface{})["data"].(string)}
 			case map[string]interface{}:
 				switch t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"].(type) {
 				case string:
-					t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"] = map[string]string{"data": t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"].(string)}
+					t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"] = map[string]interface{}{"data": t["act"].(map[string]interface{})["data"].(map[string]interface{})["owner"].(string)}
 				}
 			}
 		}
