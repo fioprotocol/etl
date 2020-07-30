@@ -14,32 +14,19 @@ type TraceResult struct {
 }
 
 type FullTrace struct {
-	NetUsageWords   string                 `json:"net_usage_words"`
-	Scheduled       string                 `json:"scheduled"`
-	Partial         map[string]interface{} `json:"partial"`
-	AccountRamDelta string                 `json:"account_ram_delta"`
-	NetUsage        string                 `json:"net_usage"`
-	Elapsed         string                 `json:"elapsed"`
-	ErrorCode       interface{}            `json:"error_code"`
-	CpuUsageUs      string                 `json:"cpu_usage_us"`
-	FailedDtrxTrace interface{}            `json:"failed_dtrx_trace"`
-	Except          string                 `json:"except"`
-	Status          string                 `json:"status"`
-	Id              string                 `json:"id"`
+	NetUsageWords   string                   `json:"net_usage_words"`
+	Scheduled       string                   `json:"scheduled"`
+	Partial         map[string]interface{}   `json:"partial"`
+	AccountRamDelta string                   `json:"account_ram_delta"`
+	NetUsage        string                   `json:"net_usage"`
+	Elapsed         string                   `json:"elapsed"`
+	ErrorCode       interface{}              `json:"error_code"`
+	CpuUsageUs      string                   `json:"cpu_usage_us"`
+	FailedDtrxTrace interface{}              `json:"failed_dtrx_trace"`
+	Except          string                   `json:"except"`
+	Status          string                   `json:"status"`
+	Id              string                   `json:"id"`
 	ActionTraces    []map[string]interface{} `json:"action_traces"`
-	//ActionTraces    []struct {
-	//	ContextFree          string                 `json:"context_free"`
-	//	Act                  map[string]interface{} `json:"act"`
-	//	AccountRamDeltas     interface{}            `json:"account_ram_deltas"`
-	//	ActionOrdinal        string                 `json:"action_ordinal"`
-	//	Elapsed              string                 `json:"elapsed"`
-	//	ErrorCode            string                 `json:"error_code"`
-	//	Except               string                 `json:"except"`
-	//	Receiver             string                 `json:"receiver"`
-	//	CreatorActionOrdinal string                 `json:"creator_action_ordinal"`
-	//	Receipt              map[string]interface{} `json:"receipt"`
-	//	Console              string                 `json:"console"`
-	//} `json:"action_traces"`
 }
 
 func Trace(b []byte) (trace json.RawMessage, err error) {

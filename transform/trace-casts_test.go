@@ -15,14 +15,14 @@ func TestBuildTrie(t *testing.T) {
 		t.Error("had data.no_no_no")
 	}
 
-	itWorks := map[string]interface{} {
-		"data": map[string]interface{} {
+	itWorks := map[string]interface{}{
+		"data": map[string]interface{}{
 			"amount": "123456",
 		},
 	}
 	worked := Fixup(itWorks)
 	type yes struct {
-		Data struct{
+		Data struct {
 			Amount int `json:"amount"`
 		} `json:"data"`
 	}

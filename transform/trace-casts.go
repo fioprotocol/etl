@@ -200,21 +200,3 @@ var (
 		`receipt.abi_sequence`,
 	}
 )
-
-//`trace.action_traces.account_ram_deltas.delta`,
-// `trace.action_traces.act.data.amount`,
-// `trace.action_traces.act.data.max_fee`,
-// `trace.action_traces.act.data.quantity`,
-// `trace.action_traces.act.data.suf_amount`,
-// `trace.action_traces.action_ordinal`,
-// `trace.action_traces.creator_action_ordinal`,
-// `trace.action_traces.elapsed`,
-// `trace.action_traces.receipt.abi_sequence`,
-// `trace.action_traces.receipt.act.data.amount`,
-// `trace.action_traces.receipt.act.data.max_fee`,
-// `trace.action_traces.receipt.act.data.quantity`,
-// `trace.action_traces.receipt.act.data.suf_amount`,
-// `trace.action_traces.receipt.auth_sequence.sequence`,
-// `trace.action_traces.receipt.code_sequence`,
-// `trace.action_traces.receipt.global_sequence`,
-// `trace.action_traces.receipt.recv_sequence`,
