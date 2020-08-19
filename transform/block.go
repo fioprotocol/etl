@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/fioprotocol/fio-go"
-	"github.com/fioprotocol/fio-go/imports/eos-go"
-	"github.com/fioprotocol/fio-go/imports/eos-go/ecc"
+	"github.com/fioprotocol/fio-go/eos"
+	"github.com/fioprotocol/fio-go/eos/ecc"
 	"github.com/mr-tron/base58"
 	"github.com/sasha-s/go-deadlock"
 	"golang.org/x/crypto/ripemd160"
@@ -230,6 +230,7 @@ func Block(b []byte, fallbackUrl string) (header json.RawMessage, schedule json.
 		if s, ok := trx["trx"].(string); ok {
 			trx["trx"] = map[string]string{"bytes": s}
 		}
+		trx = Fixup(trx)
 	}
 	if block.Block.NewProducers != nil {
 		sched := Schedule{

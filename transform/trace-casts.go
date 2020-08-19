@@ -198,5 +198,8 @@ var (
 		`receipt.code_sequence`,
 		`receipt.recv_sequence`,
 		`receipt.abi_sequence`,
+
+		`cpu_usage_us`,
+		`net_usage_words`,
 	}
 )

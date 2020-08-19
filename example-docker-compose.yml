@@ -25,6 +25,11 @@ services:
     stop_grace_period: 1m30s
     depends_on:
       - fioetl
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
 
   fioetl:
     build:
@@ -39,6 +44,11 @@ services:
     stop_grace_period: 1m30s
     depends_on:
       - rabbit
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
 
   rabbit:
     image: "rabbitmq:latest"
@@ -50,6 +60,11 @@ services:
         target: /var/lib/rabbitmq
     expose:
       - "5672"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
 
   logstash:
     image: "logstash:7.8.1"
@@ -58,9 +73,21 @@ services:
       - rabbit
     volumes:
       - type: bind
+        source: ./logstash/logstash.yml
+        target: /usr/share/logstash/config/logstash.yml
+      - type: bind
         source: ./logstash/logstash.conf
-        target: /usr/share/logstash/config/logstash.conf
+        target: /usr/share/logstash/pipeline/logstash.conf
+      - type: volume
+        source: logstash-data
+        target: /usr/share/logstash/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
 
 volumes:
   chronicle-data:
   rabbit-data:
+  logstash-data:
