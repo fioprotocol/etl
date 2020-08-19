@@ -26,19 +26,10 @@ services:
     depends_on:
       - fioetl
 
-  fioetl-producer:
-    build:
-      context: .
-      dockerfile: Dockerfile-publisher
-    restart: always
-    stop_grace_period: 1m30s
-    depends_on:
-      - rabbit
-
   fioetl:
     build:
       context: .
-      dockerfile: Dockerfile-consumer
+      dockerfile: Dockerfile-fioetl
     expose:
       - "8844"
     restart: always
@@ -59,6 +50,16 @@ services:
         target: /var/lib/rabbitmq
     expose:
       - "5672"
+
+  logstash:
+    image: "logstash:7.8.1"
+    restart: always
+    depends_on:
+      - rabbit
+    volumes:
+      - type: bind
+        source: ./logstash/logstash.conf
+        target: /usr/share/logstash/config/logstash.conf
 
 volumes:
   chronicle-data:

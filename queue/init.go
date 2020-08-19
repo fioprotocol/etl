@@ -7,10 +7,9 @@ import (
 
 var (
 	elog *log.Logger
-	ilog *log.Logger
 	dlog *log.Logger
 )
 
 func init() {
-	elog, ilog, dlog = logging.Setup("[fioetl-queue] ")
+	elog, _, dlog = logging.Setup("[fioetl-queue] ")
 }

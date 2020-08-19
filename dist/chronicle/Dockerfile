@@ -1,3 +1,5 @@
+# This is VERY large, and takes a long time to build.
+
 FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update; apt-get -y upgrade && apt-get -y install wget gpg apt-transport-https software-properties-common
@@ -27,20 +29,6 @@ RUN mkdir build && \
    make -j8 && \
    make install
 
-#RUN apt update && \
-#    apt install -y git g++ cmake libboost-dev libboost-thread-dev libboost-test-dev \
-#    libboost-filesystem-dev libboost-date-time-dev libboost-system-dev libboost-iostreams-dev \
-#    libboost-program-options-dev libboost-locale-dev libssl-dev libgmp-dev
-#RUN git clone https://github.com/EOSChronicleProject/eos-chronicle.git && \
-#    cd eos-chronicle && \
-#    git submodule update --init --recursive
-#RUN cd eos-chronicle && \
-#    mkdir build && \
-#    cd build && \
-#    cmake .. && make -j 10 && \
-#    mv chronicle-receiver /opt/ && \
-#    mkdir /data && \
-#    rm -rf ~/eos-chronicle
 COPY entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh && mkdir -p /opt/data
 WORKDIR /opt/data

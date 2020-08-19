@@ -3,4 +3,5 @@ docker-compose.yml
 local*
 auth*.yml
 fioetl
+grafana*
 
