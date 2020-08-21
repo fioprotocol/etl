@@ -1,0 +1,58 @@
+{
+  "_index": "logstash-block-2020.07",
+  "_type": "_doc",
+  "_id": "0113723006d8c7acd7b6785d5d02d29086261884ec9b1d35feaeabffe7559e9b",
+  "_version": 1,
+  "_score": null,
+  "_source": {
+    "block_time": "2020-07-07T12:01:01.5Z",
+    "block": {
+      "transactions": [
+        {
+          "cpu_usage_us": 1212,
+          "trx": {
+            "compression": "0",
+            "packed_trx": "1b64045fe870a4c5667f0000000001e0afc646dd0ca85b000000403a13513d0160465fa24cdb17340000000000e94c44150c627040657665727374616b6560465fa24cdb173400",
+            "signatures": [
+              "SIG_K1_K8tjVBr9CoCF1Swhk9KrN7VPNjWcpE1ne9R6LuA2ZmeNnL9N6DJiTcx5jfq8PaDCnr89frNZPHSbuzLbjA8Q7ZTSfqdiBE"
+            ],
+            "packed_context_free_data": ""
+          },
+          "status": "executed",
+          "net_usage_words": 15
+        }
+      ],
+      "header_extensions": [],
+      "timestamp": "2020-07-07T12:01:01.5",
+      "record_type": "",
+      "producer_signature": "SIG_K1_Kd58yoJyyeja2GMBgnZmQsxYgnKsugjgG2osKNQEJR6VKc2zhCLeMg2JF2UhXhqP8nCrrkabCtb7f6udrm4JvRCL1p4SAi",
+      "previous": "0113722fdf23c2704605ded9d63b79e9cac3def2b554b72eb103491143154f9a",
+      "new_producers": null,
+      "transaction_mroot": "f430cba523e5ad131d1e1f37e9c70027b10e8a28d97224866036d5aaee38ddcb",
+      "producer": "lhp1ytjibtea",
+      "action_mroot": "e7ad93c51c9fd62747b3ad4d21851c7685dd75da93ede26e95a7b31b2a67bd32",
+      "confirmed": 0,
+      "schedule_version": 15,
+      "block_extensions": []
+    },
+    "@version": "1",
+    "id": "0113723006d8c7acd7b6785d5d02d29086261884ec9b1d35feaeabffe7559e9b",
+    "@timestamp": "2020-07-07T12:01:01.500Z",
+    "type": "block",
+    "block_num": 18051632
+  },
+  "fields": {
+    "block_time": [
+      "2020-07-07T12:01:01.500Z"
+    ],
+    "block.timestamp": [
+      "2020-07-07T12:01:01.500Z"
+    ],
+    "@timestamp": [
+      "2020-07-07T12:01:01.500Z"
+    ]
+  },
+  "sort": [
+    1594123261500
+  ]
+}

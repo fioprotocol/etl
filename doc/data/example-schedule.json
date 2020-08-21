@@ -1,0 +1,113 @@
+{
+  "_index": "logstash-schedule-2020.06",
+  "_type": "_doc",
+  "_id": "sched-14985257-2020-06-19 18:03:42 +0000 UTC",
+  "_version": 1,
+  "_score": null,
+  "_source": {
+    "block_time": "2020-06-19T18:03:42Z",
+    "@version": "1",
+    "producers": [
+      {
+        "block_signing_key": "FIO58zbJTdx3q4YF9c1njtYsm4HCEuhtqcmp88xV9yByGdookaFAR",
+        "producer_name": "akfxqn52fx3a"
+      },
+      {
+        "block_signing_key": "FIO7AYEJPxL4Nji6ToNSye85E6hQ6aFnEhv6CCXV44YRd82yhfLbZ",
+        "producer_name": "aloha3joooqd"
+      },
+      {
+        "block_signing_key": "FIO6bhY1JKW3t7TjBPMbDUXU69hE7zRdQ4PPLJc6TCtirxhauFT8G",
+        "producer_name": "bxb2lvjyevng"
+      },
+      {
+        "block_signing_key": "FIO5KGeVKc7verfpbmuPuwVdtQr99uLKgWck1UHHikoyjVheSfL3e",
+        "producer_name": "c5aeqmc1trd2"
+      },
+      {
+        "block_signing_key": "FIO8UxsfvX6QpjukrFqbaUMtT7WfeiXZRE26F4ATAwYjwZacUACNw",
+        "producer_name": "dacobcm2lnnc"
+      },
+      {
+        "block_signing_key": "FIO5hZB8REVEirigba4N7TKa67MYm4HFwtiKz6GZJ2eRi5Paxwixz",
+        "producer_name": "ezsmbcy2opod"
+      },
+      {
+        "block_signing_key": "FIO7GdQjCqRpjhoYj3p2asFhkWrKqjGDApSmXX3sAjA3yFUSDABXL",
+        "producer_name": "fox3ss1ajpca"
+      },
+      {
+        "block_signing_key": "FIO6Hj37zJkLopi78az236ZJk4Ri3jgQZM5nFHCZMAxxsY9ZGiEqt",
+        "producer_name": "hislmnfx13ya"
+      },
+      {
+        "block_signing_key": "FIO4uobUq6JnRMzVrLjLyW9EXPJAZoyd5epoD5xgzBKGVi9WMiA1K",
+        "producer_name": "jdyt1ftnsifr"
+      },
+      {
+        "block_signing_key": "FIO7isS9FGhKpTHLm29mmwADfdea22EXFLAgt9vcPV4iiDtW7Zs3g",
+        "producer_name": "jnmwi5vu3hle"
+      },
+      {
+        "block_signing_key": "FIO7dL9S6nQM2V2wD2oVRt99uDC7Sz8ghoiM62cgypBnxe6T3Jh7y",
+        "producer_name": "lhp1ytjibtea"
+      },
+      {
+        "block_signing_key": "FIO847wve5dDwFBkJbySdgnVijeZqFWP9AGhKMY25MQTiQbHMcV2w",
+        "producer_name": "lion4uxxfbqo"
+      },
+      {
+        "block_signing_key": "FIO5mep7TfbYtqZgpkCu9tCydEfeFbbcEesufvjZkNbQ9QLy6Pvx5",
+        "producer_name": "mak1ed5b4k1v"
+      },
+      {
+        "block_signing_key": "FIO5nBuCZPGAC1x91gbkMWr7UNt5huDtdW3JsGZDgWzcXAKowF22b",
+        "producer_name": "mhtdyxpob5fp"
+      },
+      {
+        "block_signing_key": "FIO61Yn8GqRFfoy4YUFPfejBuxbCoND9btWjcdDhYbNALWCibaqiT",
+        "producer_name": "p5fi5ywnitjc"
+      },
+      {
+        "block_signing_key": "FIO5ZgNMNkDAbd6kCR5HQEfyEuCvDVqWi7BD6LTGy5wSU1VeAcirr",
+        "producer_name": "sweidrpkehv2"
+      },
+      {
+        "block_signing_key": "FIO84TbrKccj7jTDd3BAEVDffwY1EjNjx8djgShodHDCC4hBnkLEF",
+        "producer_name": "t21zeqsjq5cb"
+      },
+      {
+        "block_signing_key": "FIO4vjvL87MJofKngzUFJirkbj4ghS5GqH4zjAqcJLP6YMCf4mY52",
+        "producer_name": "vanwzbdtqimq"
+      },
+      {
+        "block_signing_key": "FIO59Wxmi2QTeiBCV4o5EnjB8zLRJFanB299REeZcGJvt4Zu5aLSW",
+        "producer_name": "w4jqarnxsdqv"
+      },
+      {
+        "block_signing_key": "FIO6f61Fe85JyeQ225LqQQUV5dfddXB4guGxdp8jsMCP37Gt5Y6Pb",
+        "producer_name": "wrcjejslfplp"
+      },
+      {
+        "block_signing_key": "FIO5q3Mch8sSjXhy1d8xoLx6MjUsbZ7BCbNFDvfamwZdGdgk8AdK7",
+        "producer_name": "zw4ndejblefr"
+      }
+    ],
+    "id": "sched-14985257-2020-06-19 18:03:42 +0000 UTC",
+    "@timestamp": "2020-06-19T18:03:42.000Z",
+    "type": "schedule",
+    "schedule": 15,
+    "block_num": 14985257
+  },
+  "fields": {
+    "block_time": [
+      "2020-06-19T18:03:42.000Z"
+    ],
+    "@timestamp": [
+      "2020-06-19T18:03:42.000Z"
+    ]
+  },
+  "sort": [
+    1592589822000
+  ]
+}

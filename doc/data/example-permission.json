@@ -1,0 +1,54 @@
+{
+  "_index": "logstash-permission-2020.07",
+  "_type": "_doc",
+  "_id": "f65f6a90880e8f0dd66cfee436c5bfd96b202633e9f915a72de0793920dc9bbd",
+  "_version": 1,
+  "_score": null,
+  "_source": {
+    "@version": "1",
+    "id": "f65f6a90880e8f0dd66cfee436c5bfd96b202633e9f915a72de0793920dc9bbd",
+    "@timestamp": "2020-07-07T03:57:22.500Z",
+    "type": "permission",
+    "data": {
+      "permission": {
+        "owner": "ltnzfjmaokmj",
+        "last_updated": "2020-07-07T03:57:22.500",
+        "name": "owner",
+        "parent": "",
+        "auth": {
+          "accounts": [],
+          "waits": [],
+          "threshold": "1",
+          "keys": [
+            {
+              "key": "PUB_K1_7gzz8bE5KRx7Q9UkcTeuDJjLHLzzbtqrYdNSNExc51Kt3KfZUE",
+              "weight": "1"
+            }
+          ]
+        }
+      },
+      "block_timestamp": "2020-07-07T03:57:22.500",
+      "added": "true",
+      "block_num": 17993597
+    },
+    "block_timestamp": "2020-07-07T03:57:22.500",
+    "block_num": 17993597
+  },
+  "fields": {
+    "@timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ],
+    "data.permission.last_updated": [
+      "2020-07-07T03:57:22.500Z"
+    ],
+    "block_timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ],
+    "data.block_timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ]
+  },
+  "sort": [
+    1594094242500
+  ]
+}

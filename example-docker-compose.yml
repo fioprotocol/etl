@@ -39,7 +39,7 @@ services:
       - "8844"
     restart: always
     environment:
-      - HOST=<**your history node here**> #ip address or hostname of nodeos
+      - HOST=<**your nodeos here**> #ip address or hostname of nodeos
       - FALLBACK_PORT=8888 #port number for chain_plugin API, used only if an error getting block id from hash of block header
     stop_grace_period: 1m30s
     depends_on:

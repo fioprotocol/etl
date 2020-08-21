@@ -1,0 +1,42 @@
+{
+  "_index": "logstash-acc_metadata-2020.07",
+  "_type": "_doc",
+  "_id": "3ac2f43cb6470b1b7bdacf6fa97fe837cb4ba35b7638e7445bc035060dc9b00d",
+  "_version": 1,
+  "_score": null,
+  "_source": {
+    "@version": "1",
+    "id": "3ac2f43cb6470b1b7bdacf6fa97fe837cb4ba35b7638e7445bc035060dc9b00d",
+    "@timestamp": "2020-07-07T03:57:22.500Z",
+    "type": "acc_metadata",
+    "data": {
+      "account_metadata": {
+        "code_metadata": null,
+        "name": "ltnzfjmaokmj",
+        "is_privileged": "false",
+        "last_code_update": "1970-01-01T00:00:00.000"
+      },
+      "block_timestamp": "2020-07-07T03:57:22.500",
+      "block_num": 17993597
+    },
+    "block_timestamp": "2020-07-07T03:57:22.500",
+    "block_num": 17993597
+  },
+  "fields": {
+    "@timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ],
+    "block_timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ],
+    "data.block_timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ],
+    "data.account_metadata.last_code_update": [
+      "1970-01-01T00:00:00.000Z"
+    ]
+  },
+  "sort": [
+    1594094242500
+  ]
+}

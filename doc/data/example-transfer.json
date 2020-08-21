@@ -1,0 +1,68 @@
+{
+  "_index": "logstash-transfer-2020.07",
+  "_type": "_doc",
+  "_id": "fad342d375d023aa99a1eb561140aec440d86f58a549277f2a83cd021b7451ca-3",
+  "_version": 1,
+  "_score": null,
+  "_source": {
+    "@version": "1",
+    "action": {
+      "context_free": "false",
+      "account_ram_deltas": [],
+      "elapsed": 0,
+      "console": "",
+      "except": "",
+      "receiver": "fio.token",
+      "receipt": {
+        "abi_sequence": 1,
+        "act_digest": "adddd96ebf4270f7d1f13f971f58b183a8f8252d3d75900596d42a19ad47723e",
+        "global_sequence": 18331555,
+        "code_sequence": 1,
+        "recv_sequence": 16447,
+        "auth_sequence": [
+          {
+            "sequence": "18193777",
+            "account": "eosio"
+          }
+        ],
+        "receiver": "fio.token"
+      },
+      "error_code": null,
+      "action_ordinal": 3,
+      "act": {
+        "authorization": [
+          {
+            "permission": "active",
+            "actor": "eosio"
+          }
+        ],
+        "account": "fio.token",
+        "data": {
+          "quantity": 40,
+          "to": "fio.treasury",
+          "from": "fntk2uk3xv12",
+          "memo": "FIO API fees. Thank you."
+        },
+        "name": "transfer"
+      },
+      "creator_action_ordinal": 1
+    },
+    "id": "fad342d375d023aa99a1eb561140aec440d86f58a549277f2a83cd021b7451ca-3",
+    "@timestamp": "2020-07-07T03:57:22.500Z",
+    "type": "transfer",
+    "txid": "fad342d375d023aa99a1eb561140aec440d86f58a549277f2a83cd021b7451ca",
+    "block_timestamp": "2020-07-07T03:57:22.500",
+    "block_num": 17993597
+  },
+  "fields": {
+    "@timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ],
+    "block_timestamp": [
+      "2020-07-07T03:57:22.500Z"
+    ]
+  },
+  "sort": [
+    1594094242500
+  ]
+}
