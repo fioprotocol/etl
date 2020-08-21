@@ -2,6 +2,8 @@ package transform
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"strconv"
 )
 
@@ -17,7 +19,7 @@ type FullTrace struct {
 	NetUsageWords   string                   `json:"net_usage_words"`
 	Scheduled       string                   `json:"scheduled"`
 	Partial         map[string]interface{}   `json:"partial"`
-	AccountRamDelta string                   `json:"account_ram_delta"`
+	AccountRamDelta interface{}              `json:"account_ram_delta"`
 	NetUsage        string                   `json:"net_usage"`
 	Elapsed         string                   `json:"elapsed"`
 	ErrorCode       interface{}              `json:"error_code"`
@@ -38,6 +40,20 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 	tr := &TraceResult{}
 	err = json.Unmarshal(msg.Data, tr)
 	if err != nil {
+		log.Println("issue decoding trace:")
+		fmt.Println(string(msg.Data))
+		msi := make(map[string]interface{})
+		err = json.Unmarshal(msg.Data, &msi)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		if msi["trace"] != nil {
+			switch msi["trace"].(type) {
+			case string:
+				log.Println("entire trace was a string!")
+			}
+		}
 		return
 	}
 	tr.Id = tr.Trace.Id
