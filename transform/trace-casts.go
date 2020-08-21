@@ -13,6 +13,9 @@ import (
 var intTrie, floatTrie, boolTrie *trie.Trie
 
 // Fixup applies type casting for fields that need changed. For example an amount that should be an int but is a string
+// most of these could be handled by logstash but because they are deeply nested it would require using the ruby plugin
+// so this should be faster. It still slows the ingest process by roughly double, but not having the numeric types is
+// not ok.
 func Fixup(fixme map[string]interface{}) map[string]interface{} {
 	for _, t := range []string{"int", "bool", "float"} {
 		seekFor(fixme, nil, t)
@@ -137,6 +140,7 @@ func toFloat(v interface{}) interface{} {
 	return v
 }
 
+// BuildTrie creates a trie used to search for type casts, it is slightly faster than trying every possible value.
 func BuildTrie() (intTrie *trie.Trie, floatTrie *trie.Trie, boolTrie *trie.Trie) {
 	intTrie = trie.New()
 	_ = intTrie.Put("/", true)
@@ -168,7 +172,7 @@ func BuildTrie() (intTrie *trie.Trie, floatTrie *trie.Trie, boolTrie *trie.Trie)
 	return
 }
 
-// for now only fixing up traces, but flexible enough for generic work:
+// each of the following slices are converted into a trie, each slice represents a type to cast to.
 var (
 	wantBool = []string{
 		//`trace.scheduled`,

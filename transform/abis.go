@@ -101,6 +101,7 @@ func (a abiMap) lookup(account string, table string, s string) json.RawMessage {
 	return j
 }
 
+// handle missing ABIs from genesis
 var eosioAbi = []byte(`{
     "version": "eosio::abi/1.1",
     "types": [],

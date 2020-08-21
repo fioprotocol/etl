@@ -31,6 +31,7 @@ type FullTrace struct {
 	ActionTraces    []map[string]interface{} `json:"action_traces"`
 }
 
+// Trace handles various type casts and enhances with a block id and other expected metadata
 func Trace(b []byte) (trace json.RawMessage, err error) {
 	msg := &MsgData{}
 	err = json.Unmarshal(b, msg)

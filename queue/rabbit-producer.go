@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+// StartProducer sets up the connection to the message queue, and publishes to a channel when a message arrives over
+// the messages channel receives a message.
 func StartProducer(ctx context.Context, channel string, messages chan []byte, errs chan error, quit chan interface{}) {
 	exitOn := func(err error) bool {
 		if err != nil {

@@ -37,7 +37,6 @@ func (k *Kvo) fixTable() {
 	}
 
 	// see if key is an integer value, and try to derive a name if appropriate
-	// DO NOT send as a uint64, this will overflow cosmos (signed int64) and cause deserialization errors :(
 	i, err := strconv.ParseUint(k.PrimaryKey.(string), 10, 64)
 	if err != nil {
 		return

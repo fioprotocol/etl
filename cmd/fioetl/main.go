@@ -7,6 +7,10 @@ import (
 	"net/http"
 )
 
+/*
+fioetl accepts messages from a chronicle daemon, applies normalization, and sends to a message queue for consumption
+*/
+
 func main() {
 	elog, ilog, _ := logging.Setup(" [fioetl-consumer] ")
 	ilog.Println("fioetl starting")
