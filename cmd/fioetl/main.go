@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/dapixio/fio.etl/chronicle"
-	"github.com/dapixio/fio.etl/logging"
+	"github.com/fioprotocol/fio.etl/chronicle"
+	"github.com/fioprotocol/fio.etl/logging"
 	"github.com/gorilla/mux"
 	"net/http"
 )

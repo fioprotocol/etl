@@ -1,7 +1,7 @@
 package chronicle
 
 import (
-	"github.com/dapixio/fio.etl/logging"
+	"github.com/fioprotocol/fio.etl/logging"
 	"log"
 )
 
