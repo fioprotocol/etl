@@ -1,7 +1,7 @@
 package transform
 
 import (
-	l "github.com/dapixio/fio.etl/logging"
+	l "github.com/fioprotocol/fio.etl/logging"
 	"log"
 )
 
