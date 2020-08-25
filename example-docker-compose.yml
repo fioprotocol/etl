@@ -1,0 +1,93 @@
+version: '3.8'
+services:
+
+  chronicle:
+    build: dist/chronicle
+    volumes:
+      - type: volume
+        source: chronicle-data
+        target: /opt/data
+    environment:
+      - DATA_DIR=./data
+      - MODE=scan
+      - HOST=<**your history node here**> #ip address or hostname of nodeos with state-history plogin
+      - PORT=8080 #port number of state history plugin
+      - WS_HOST=fioetl
+      - WS_PORT=8844
+      - SKIP_BLOCK_EVENTS=false
+      - SKIP_TABLE_DELTAS=false
+      - SKIP_TRACES=false
+      - BIN_HEADER=false
+      - EXP_WS_PATH=/chronicle
+      - EXP_WS_MAX_QEUEU=10000
+      - IRREVERSIBLE_ONLY=true
+    restart: always
+    stop_grace_period: 1m30s
+    depends_on:
+      - fioetl
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  fioetl:
+    build:
+      context: .
+      dockerfile: Dockerfile-fioetl
+    expose:
+      - "8844"
+    restart: always
+    environment:
+      - HOST=<**your nodeos here**> #ip address or hostname of nodeos
+      - FALLBACK_PORT=8888 #port number for chain_plugin API, used only if an error getting block id from hash of block header
+    stop_grace_period: 1m30s
+    depends_on:
+      - rabbit
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  rabbit:
+    image: "rabbitmq:latest"
+    restart: always
+    stop_grace_period: 1m30s
+    volumes:
+      - type: volume
+        source: rabbit-data
+        target: /var/lib/rabbitmq
+    expose:
+      - "5672"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  logstash:
+    image: "logstash:7.8.1"
+    restart: always
+    depends_on:
+      - rabbit
+    volumes:
+      - type: bind
+        source: ./logstash/logstash.yml
+        target: /usr/share/logstash/config/logstash.yml
+      - type: bind
+        source: ./logstash/logstash.conf
+        target: /usr/share/logstash/pipeline/logstash.conf
+      - type: volume
+        source: logstash-data
+        target: /usr/share/logstash/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+volumes:
+  chronicle-data:
+  rabbit-data:
+  logstash-data:

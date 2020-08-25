@@ -1,0 +1,8 @@
+docker-compose.yml
+.idea
+local*
+auth*.yml
+./fioetl
+grafana*
+logstash/logstash.conf
+

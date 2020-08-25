@@ -1,0 +1,306 @@
+{
+  "_index": "logstash-trace-2020.07",
+  "_type": "_doc",
+  "_id": "356b49498dbab175f0099c837af5bf95ff459e603143478ad78781e4fe793346",
+  "_version": 1,
+  "_score": null,
+  "_source": {
+    "@version": "1",
+    "id": "356b49498dbab175f0099c837af5bf95ff459e603143478ad78781e4fe793346",
+    "@timestamp": "2020-07-06T22:00:02.000Z",
+    "trace": {
+      "account_ram_delta": null,
+      "net_usage": "120",
+      "scheduled": "false",
+      "id": "356b49498dbab175f0099c837af5bf95ff459e603143478ad78781e4fe793346",
+      "action_traces": [
+        {
+          "context_free": "false",
+          "account_ram_deltas": [
+            {
+              "delta": 144,
+              "account": "fio.treasury"
+            },
+            {
+              "delta": 128,
+              "account": "lhp1ytjibtea"
+            }
+          ],
+          "elapsed": 0,
+          "console": "",
+          "except": "",
+          "receipt": {
+            "abi_sequence": 1,
+            "act_digest": "0fd6b6153b9a9c78149ed8c01b854cb7720f5e8e8aa54721a9bdef3af69162c4",
+            "global_sequence": 18288598,
+            "code_sequence": 2,
+            "recv_sequence": 92704,
+            "auth_sequence": [
+              {
+                "sequence": "374",
+                "account": "hislmnfx13ya"
+              }
+            ],
+            "receiver": "fio.treasury"
+          },
+          "receiver": "fio.treasury",
+          "error_code": null,
+          "action_ordinal": 1,
+          "act": {
+            "account": "fio.treasury",
+            "authorization": [
+              {
+                "permission": "claimrewards",
+                "actor": "hislmnfx13ya"
+              }
+            ],
+            "data": {
+              "actor": "hislmnfx13ya",
+              "fio_address": "bp@eosbarcelona"
+            },
+            "name": "bpclaim"
+          },
+          "creator_action_ordinal": 0
+        },
+        {
+          "context_free": "false",
+          "account_ram_deltas": [],
+          "elapsed": 0,
+          "console": "",
+          "except": "",
+          "receipt": {
+            "abi_sequence": 2,
+            "act_digest": "91daf213a0ccca69bbad4e72870bf603dc038f009da563dfeac0796dff08f4ac",
+            "global_sequence": 18288599,
+            "code_sequence": 4,
+            "recv_sequence": 18020603,
+            "auth_sequence": [
+              {
+                "sequence": "21860",
+                "account": "fio.treasury"
+              }
+            ],
+            "receiver": "eosio"
+          },
+          "receiver": "eosio",
+          "error_code": null,
+          "action_ordinal": 2,
+          "act": {
+            "account": "eosio",
+            "authorization": [
+              {
+                "permission": "active",
+                "actor": "fio.treasury"
+              }
+            ],
+            "data": {
+              "producer": "hislmnfx13ya"
+            },
+            "name": "updlbpclaim"
+          },
+          "creator_action_ordinal": 1
+        },
+        {
+          "context_free": "false",
+          "account_ram_deltas": [],
+          "elapsed": 0,
+          "console": "",
+          "except": "",
+          "receipt": {
+            "abi_sequence": 1,
+            "act_digest": "98a15736826e43a51fbbd10b9905f8cf25efb4bf03024aaf75c045861ee2aebf",
+            "global_sequence": 18288600,
+            "code_sequence": 1,
+            "recv_sequence": 16440,
+            "auth_sequence": [
+              {
+                "sequence": "21861",
+                "account": "fio.treasury"
+              }
+            ],
+            "receiver": "fio.token"
+          },
+          "receiver": "fio.token",
+          "error_code": null,
+          "action_ordinal": 3,
+          "act": {
+            "account": "fio.token",
+            "authorization": [
+              {
+                "permission": "active",
+                "actor": "fio.treasury"
+              }
+            ],
+            "data": {
+              "quantity": 2127.863688231,
+              "to": "hislmnfx13ya",
+              "from": "fio.treasury",
+              "memo": "Paying producer from treasury."
+            },
+            "name": "transfer"
+          },
+          "creator_action_ordinal": 1
+        },
+        {
+          "context_free": "false",
+          "account_ram_deltas": [],
+          "elapsed": 0,
+          "console": "",
+          "except": "",
+          "receipt": {
+            "abi_sequence": 2,
+            "act_digest": "5ed730cd6a34c94e91b23921822b0065d85dfd7ae0ca13aba234fcb7faa35147",
+            "global_sequence": 18288603,
+            "code_sequence": 4,
+            "recv_sequence": 18020604,
+            "auth_sequence": [
+              {
+                "sequence": "21864",
+                "account": "fio.treasury"
+              }
+            ],
+            "receiver": "eosio"
+          },
+          "receiver": "eosio",
+          "error_code": null,
+          "action_ordinal": 4,
+          "act": {
+            "account": "eosio",
+            "authorization": [
+              {
+                "permission": "active",
+                "actor": "fio.treasury"
+              }
+            ],
+            "data": {
+              "producer": "hislmnfx13ya"
+            },
+            "name": "resetclaim"
+          },
+          "creator_action_ordinal": 1
+        },
+        {
+          "context_free": "false",
+          "account_ram_deltas": [],
+          "elapsed": 0,
+          "console": "",
+          "except": "",
+          "receipt": {
+            "abi_sequence": 1,
+            "act_digest": "98a15736826e43a51fbbd10b9905f8cf25efb4bf03024aaf75c045861ee2aebf",
+            "global_sequence": 18288601,
+            "code_sequence": 1,
+            "recv_sequence": 92705,
+            "auth_sequence": [
+              {
+                "sequence": "21862",
+                "account": "fio.treasury"
+              }
+            ],
+            "receiver": "fio.treasury"
+          },
+          "receiver": "fio.treasury",
+          "error_code": null,
+          "action_ordinal": 5,
+          "act": {
+            "account": "fio.token",
+            "authorization": [
+              {
+                "permission": "active",
+                "actor": "fio.treasury"
+              }
+            ],
+            "data": {
+              "quantity": 2127.863688231,
+              "to": "hislmnfx13ya",
+              "from": "fio.treasury",
+              "memo": "Paying producer from treasury."
+            },
+            "name": "transfer"
+          },
+          "creator_action_ordinal": 3
+        },
+        {
+          "context_free": "false",
+          "account_ram_deltas": [],
+          "elapsed": 0,
+          "console": "",
+          "except": "",
+          "receipt": {
+            "abi_sequence": 1,
+            "act_digest": "98a15736826e43a51fbbd10b9905f8cf25efb4bf03024aaf75c045861ee2aebf",
+            "global_sequence": 18288602,
+            "code_sequence": 1,
+            "recv_sequence": 109,
+            "auth_sequence": [
+              {
+                "sequence": "21863",
+                "account": "fio.treasury"
+              }
+            ],
+            "receiver": "hislmnfx13ya"
+          },
+          "receiver": "hislmnfx13ya",
+          "error_code": null,
+          "action_ordinal": 6,
+          "act": {
+            "account": "fio.token",
+            "authorization": [
+              {
+                "permission": "active",
+                "actor": "fio.treasury"
+              }
+            ],
+            "data": {
+              "quantity": 2127.863688231,
+              "to": "hislmnfx13ya",
+              "from": "fio.treasury",
+              "memo": "Paying producer from treasury."
+            },
+            "name": "transfer"
+          },
+          "creator_action_ordinal": 3
+        }
+      ],
+      "partial": {
+        "max_net_usage_words": "0",
+        "transaction_extensions": [],
+        "context_free_data": [],
+        "delay_sec": "0",
+        "ref_block_num": "59062",
+        "ref_block_prefix": "3188064174",
+        "signatures": [
+          "SIG_K1_K5x5PQEWpB1VvBxS3c1GoHeVKVeNaQLmkvagveDNuJCKg1UwGh1iVipBcyuGCXpDgNo9KCFHMt4HHSby9fmb72aHC39pW5"
+        ],
+        "expiration": "2020-07-06T22:00:31.000",
+        "max_cpu_usage_ms": "0"
+      },
+      "elapsed": "0",
+      "failed_dtrx_trace": [],
+      "except": "",
+      "status": "executed",
+      "cpu_usage_us": "1423",
+      "error_code": null,
+      "net_usage_words": "15"
+    },
+    "type": "trace",
+    "block_timestamp": "2020-07-06T22:00:02.000",
+    "block_num": 17950719
+  },
+  "fields": {
+    "@timestamp": [
+      "2020-07-06T22:00:02.000Z"
+    ],
+    "trace.failed_dtrx_trace.partial.expiration": [],
+    "trace.action_traces.act.data.trx.expiration": [],
+    "block_timestamp": [
+      "2020-07-06T22:00:02.000Z"
+    ],
+    "trace.partial.expiration": [
+      "2020-07-06T22:00:31.000Z"
+    ]
+  },
+  "sort": [
+    1594072802000
+  ]
+}

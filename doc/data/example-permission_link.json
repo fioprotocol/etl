@@ -1,0 +1,40 @@
+{
+  "_index": "logstash-permission_link-2020.06",
+  "_type": "_doc",
+  "_id": "4f9cb57776af525cfd7379cfefbc7154192d1c888698d4f57561aae706a1766d",
+  "_version": 1,
+  "_score": null,
+  "_source": {
+    "@version": "1",
+    "id": "4f9cb57776af525cfd7379cfefbc7154192d1c888698d4f57561aae706a1766d",
+    "@timestamp": "2020-06-03T05:55:50.000Z",
+    "type": "permission_link",
+    "data": {
+      "block_timestamp": "2020-06-03T05:55:50.000",
+      "added": "true",
+      "permission_link": {
+        "account": "hislmnfx13ya",
+        "required_permission": "claimrewards",
+        "code": "fio.treasury",
+        "message_type": "bpclaim"
+      },
+      "block_num": 12133689
+    },
+    "block_timestamp": "2020-06-03T05:55:50.000",
+    "block_num": 12133689
+  },
+  "fields": {
+    "@timestamp": [
+      "2020-06-03T05:55:50.000Z"
+    ],
+    "block_timestamp": [
+      "2020-06-03T05:55:50.000Z"
+    ],
+    "data.block_timestamp": [
+      "2020-06-03T05:55:50.000Z"
+    ]
+  },
+  "sort": [
+    1591163750000
+  ]
+}
