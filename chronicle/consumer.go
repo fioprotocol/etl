@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	fiograph "github.com/fioprotocol/fio.etl/graph"
 	"github.com/fioprotocol/fio.etl/queue"
 	"github.com/fioprotocol/fio.etl/transform"
 	"github.com/sasha-s/go-deadlock"
@@ -22,8 +23,9 @@ import (
 )
 
 var (
-	connected bool
-	stopped   bool
+	connected, stopped bool
+	// FIXME hard-coded while testing
+	sendGraph = true
 )
 
 type Consumer struct {
@@ -135,6 +137,20 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 		c.cancel()
 		time.Sleep(2 * time.Second)
 		os.Exit(1)
+	}
+
+	fg := &fiograph.Client{}
+	fgRowChan := make(chan []byte)
+	fgTraceChan := make(chan []byte)
+	if sendGraph {
+		fg = fiograph.NewClient(fgTraceChan, fgRowChan)
+		c := fg.Pool.Get()
+		_, err = c.Do("PING")
+		if err != nil {
+			elog.Println(err)
+			panicked()
+		}
+		c.Close()
 	}
 
 	go func() {
