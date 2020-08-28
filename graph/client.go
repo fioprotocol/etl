@@ -15,10 +15,9 @@ const (
 type Client struct {
 	Pool   *redis.Pool
 	Traces chan []byte
-	Rows   chan []byte
 }
 
-func NewClient(traces chan []byte, rows chan []byte) *Client {
+func NewClient(traces chan []byte) *Client {
 	return &Client{
 		Pool: &redis.Pool{
 			MaxIdle:     5,
@@ -26,7 +25,6 @@ func NewClient(traces chan []byte, rows chan []byte) *Client {
 			Dial:        func() (redis.Conn, error) { return redis.Dial("tcp", redisHost) },
 		},
 		Traces: traces,
-		Rows:   rows,
 	}
 }
 
@@ -46,13 +44,6 @@ func (c *Client) Run(ctx context.Context) {
 			// TODO:
 			go func() {
 				_, _, _ = c.parseTrace(t)
-			}()
-		case r := <-c.Rows:
-			// TODO:
-			go func() {
-				if e := c.putObtKvo(r); e != nil {
-					log.Println(e)
-				}
 			}()
 		}
 	}

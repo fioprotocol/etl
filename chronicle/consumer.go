@@ -51,7 +51,6 @@ type Consumer struct {
 	blockChan      chan []byte
 	txChan         chan []byte
 	rowChan        chan []byte
-	graphRowChan   chan []byte
 	graphTraceChan chan []byte
 }
 
@@ -87,8 +86,7 @@ func NewConsumer(file string) *Consumer {
 	consumer.rowChan = make(chan []byte, 1)
 	consumer.miscChan = make(chan []byte, 1)
 	consumer.blockChan = make(chan []byte, 1)
-	consumer.graphRowChan = make(chan []byte) // not buffering redisgraph channels, should have good concurrency
-	consumer.graphTraceChan = make(chan []byte)
+	consumer.graphTraceChan = make(chan []byte) // not buffering redisgraph channels, should have good concurrency
 	consumer.fileName = file
 	return consumer
 }
@@ -146,7 +144,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 
 	fg := &fiograph.Client{}
 	if sendGraph {
-		fg = fiograph.NewClient(c.graphTraceChan, c.graphRowChan)
+		fg = fiograph.NewClient(c.graphTraceChan)
 		c := fg.Pool.Get()
 		_, err = c.Do("PING")
 		if err != nil {
@@ -269,18 +267,7 @@ func (c *Consumer) consume() error {
 						counterChan <- -1
 						return
 					}
-					j, e := json.Marshal(a)
-					if e != nil {
-						log.Println(e)
-						return
-					}
-					if sendGraph {
-						switch a.Kvo.Table {
-						case "fioreqctxts":
-							c.graphRowChan <- j
-						}
-					}
-					c.rowChan <- j
+					c.rowChan <- a
 					counterChan <- -1
 				}(d)
 			case "BLOCK":
@@ -305,7 +292,7 @@ func (c *Consumer) consume() error {
 				if e == nil && fin.Data.BlockNum != "" {
 					var fb int
 					fb, e = strconv.Atoi(fin.Data.BlockNum)
-					if e == nil {
+					if e == nil && lowestAck < uint32(fb) {
 						c.Sent = uint32(fb)
 					}
 				}
@@ -384,7 +371,7 @@ func (c *Consumer) consume() error {
 			case <-t.C:
 				if c.Sent > c.Seen {
 					if c.Seen == 0 {
-						lowestAck = c.Seen + 999
+						lowestAck = c.Seen +500
 					}
 					c.Seen = c.Sent
 					err = c.ack()
@@ -452,11 +439,10 @@ func (c *Consumer) save() error {
 var lowestAck uint32
 
 func (c *Consumer) ack() error {
-	// always return -256 of what has been seen, this is the max number of blocked routines allowed.
 	if c.Seen <= 256 || c.Seen < lowestAck {
 		return nil
 	}
-	return c.ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d", c.Seen-256)))
+	return c.ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d", c.Seen)))
 }
 
 func (c *Consumer) request(start uint32, end uint32) error {

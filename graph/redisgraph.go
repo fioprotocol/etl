@@ -94,17 +94,6 @@ func (c *Client) parseTrace(b []byte) (src *rg.Node, dst *rg.Node, edg *rg.Edge)
 			return
 		}
 		source.Account = robt.Actor
-
-		//id, err := strconv.ParseInt(robt.FioRequestId.(string), 10, 32)
-		//if err != nil {
-		//	log.Println(err)
-		//	fmt.Printf("%+v\n", robt)
-		//	return
-		//}
-		//dest.Account, err = c.getObtAccount(uint32(id), payee)
-		//if err != nil {
-		//	log.Println(err)
-		//}
 		dest.Account, dest.Pubkey, err = c.getFioAddress(robt.PayeeFioAddress)
 
 		from.Account = source.Account

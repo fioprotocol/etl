@@ -48,13 +48,13 @@ func (k *Kvo) fixTable() {
 	}
 }
 
-func Table(b []byte) (td * TableData, err error) {
+func Table(b []byte) (j json.RawMessage, err error) {
 	msg := &MsgData{}
 	err = json.Unmarshal(b, msg)
 	if err != nil || msg.Data == nil {
 		return
 	}
-	td = &TableData{}
+	td := &TableData{}
 	err = json.Unmarshal(msg.Data, td)
 	if err != nil || td.Kvo == nil {
 		return
@@ -65,5 +65,5 @@ func Table(b []byte) (td * TableData, err error) {
 	td.Id = hex.EncodeToString(h.Sum(nil))
 	td.RecordType = "table_row"
 	td.BlockNum, _ = strconv.ParseUint(td.BlockNum.(string), 10, 32)
-	return td, err
+	return json.Marshal(td)
 }
