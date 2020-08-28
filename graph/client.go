@@ -2,7 +2,6 @@ package fiograph
 
 import (
 	"context"
-	"fmt"
 	"github.com/gomodule/redigo/redis"
 	rg "github.com/redislabs/redisgraph-go"
 	"log"
@@ -46,11 +45,7 @@ func (c *Client) Run(ctx context.Context) {
 		case t := <-c.Traces:
 			// TODO:
 			go func() {
-				_, _, edge := c.parseTrace(t)
-				if edge == nil {
-					log.Println("warning, invalid graph")
-					fmt.Println(string(t))
-				}
+				_, _, _ = c.parseTrace(t)
 			}()
 		case r := <-c.Rows:
 			// TODO:

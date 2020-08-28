@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"github.com/fioprotocol/fio-go"
 	"github.com/fioprotocol/fio.etl/transform"
+	"github.com/mitchellh/mapstructure"
 	rg "github.com/redislabs/redisgraph-go"
 	"log"
-	"strconv"
-
-	"github.com/mitchellh/mapstructure"
 )
 
 // trimmed down copy of a full trace to get only what's needed to build the edge
@@ -51,6 +49,15 @@ func (c *Client) parseTrace(b []byte) (src *rg.Node, dst *rg.Node, edg *rg.Edge)
 	var amt float64
 
 	switch t.Trace.ActionTraces[0].Act.Name {
+	case "regaddress":
+		if t.Trace.ActionTraces[0].Act.Data != nil {
+			err = c.putFioAddress(t.Trace.ActionTraces[0].Act.Data["fio_address"].(string), t.Trace.ActionTraces[0].Act.Data["owner_fio_public_key"].(string))
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		return
+
 	case "newfundsreq":
 		nfr := &Requests{}
 		err = mapstructure.Decode(t.Trace.ActionTraces[0].Act.Data, nfr)
@@ -60,7 +67,11 @@ func (c *Client) parseTrace(b []byte) (src *rg.Node, dst *rg.Node, edg *rg.Edge)
 		}
 		// these are the nodes
 		source.Account = nfr.Actor
-		dest.Pubkey = nfr.PayerFioAddress
+		_, pubkey, err := c.getFioAddress(nfr.PayerFioAddress)
+		if err != nil {
+			return
+		}
+		dest.Pubkey = pubkey
 
 		// metadata
 		from.Account = nfr.Actor
@@ -82,17 +93,19 @@ func (c *Client) parseTrace(b []byte) (src *rg.Node, dst *rg.Node, edg *rg.Edge)
 			log.Println(err)
 			return
 		}
-		id, err := strconv.ParseInt(robt.FioRequestId.(string), 10, 32)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
 		source.Account = robt.Actor
-		dest.Account, err = c.getObtAccount(uint32(id), payee)
-		if err != nil {
-			log.Println(err)
-		}
+
+		//id, err := strconv.ParseInt(robt.FioRequestId.(string), 10, 32)
+		//if err != nil {
+		//	log.Println(err)
+		//	fmt.Printf("%+v\n", robt)
+		//	return
+		//}
+		//dest.Account, err = c.getObtAccount(uint32(id), payee)
+		//if err != nil {
+		//	log.Println(err)
+		//}
+		dest.Account, dest.Pubkey, err = c.getFioAddress(robt.PayeeFioAddress)
 
 		from.Account = source.Account
 		from.FioAddress = robt.PayerFioAddress

@@ -32,7 +32,7 @@ type FullTrace struct {
 }
 
 // Trace handles various type casts and enhances with a block id and other expected metadata
-func Trace(b []byte) (trace json.RawMessage, err error) {
+func Trace(b []byte) (trace *TraceResult, err error) {
 	msg := &MsgData{}
 	err = json.Unmarshal(b, msg)
 	if err != nil || msg.Data == nil {
@@ -78,5 +78,5 @@ func Trace(b []byte) (trace json.RawMessage, err error) {
 		// trie-search and replace for integer and float casts
 		t = Fixup(t)
 	}
-	return json.Marshal(tr)
+	return tr, err
 }

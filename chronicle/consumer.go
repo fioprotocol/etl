@@ -12,6 +12,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -262,18 +263,24 @@ func (c *Consumer) consume() error {
 				go func(d []byte) {
 					counterChan <- 1
 					defer wgDone()
-					// FIXME: don't use a json.RawMessage here, it significantly increases the graph routine's work
 					a, e := transform.Table(d)
 					if e != nil {
 						elog.Println("process row:", e)
 						counterChan <- -1
 						return
 					}
-					// is this going to create a resource leak? may need to deref and pass a copy
-					if sendGraph {
-						c.graphRowChan <- a
+					j, e := json.Marshal(a)
+					if e != nil {
+						log.Println(e)
+						return
 					}
-					c.rowChan <- a
+					if sendGraph {
+						switch a.Kvo.Table {
+						case "fioreqctxts":
+							c.graphRowChan <- j
+						}
+					}
+					c.rowChan <- j
 					counterChan <- -1
 				}(d)
 			case "BLOCK":
@@ -328,16 +335,26 @@ func (c *Consumer) consume() error {
 				go func(data []byte) {
 					counterChan <- 1
 					defer wgDone()
-					// FIXME: don't use a json.RawMessage here, it significantly increases the graph routine's work
 					a, e := transform.Trace(data)
 					if e != nil || a == nil {
 						counterChan <- -1
 						return
 					}
-					if sendGraph {
-						c.graphTraceChan <- a
+					j, e := json.Marshal(a)
+					if e != nil {
+						log.Println(e)
+						return
 					}
-					c.txChan <- a
+					if sendGraph && len(a.Trace.ActionTraces) > 0 && a.Trace.ActionTraces[0] != nil {
+						tr := a.Trace.ActionTraces[0]
+						if tr["act"] != nil && tr["act"].(map[string]interface{})["name"] != nil {
+							switch tr["act"].(map[string]interface{})["name"].(string) {
+							case "regaddress", "newfundsreq", "recordobt", "rejectfndreq", "trnsfiopubky":
+								c.graphTraceChan <- j
+							}
+						}
+					}
+					c.txChan <- j
 					counterChan <- -1
 				}(d)
 			}

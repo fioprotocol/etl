@@ -23,8 +23,8 @@ func (c *Client) getFioAddress(address string) (account string, pubkey string, e
 	switch reply.(type) {
 	case nil:
 		return "", "", errors.New("not found")
-	case string:
-		pubkey = reply.(string)
+	case string, []byte:
+		pubkey = string(reply.([]byte))
 		a, err := fio.ActorFromPub(pubkey)
 		if err != nil {
 			return "", "", err
@@ -38,7 +38,7 @@ func (c *Client) getFioAddress(address string) (account string, pubkey string, e
 func (c *Client) putFioAddress(address string, pubkey string) error {
 	client := c.Pool.Get()
 	defer client.Close()
-	_, err := client.Do("PUT", address, pubkey)
+	_, err := client.Do("SET", address, pubkey)
 	if err != nil {
 		log.Println(err)
 		return err
