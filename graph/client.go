@@ -11,8 +11,6 @@ import (
 
 const (
 	graphName = "fio"
-	// FIXME: hard-coded to docker service name
-	redisHost = "redis:6379"
 )
 
 type Client struct {
@@ -43,16 +41,23 @@ func (c *Client) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			_ = c.Pool.Close()
 			return
 		case t := <-c.Traces:
 			// TODO:
 			go func() {
-				fmt.Println(c.parseTrace(t))
+				_, _, edge := c.parseTrace(t)
+				if edge == nil {
+					log.Println("warning, invalid graph")
+					fmt.Println(string(t))
+				}
 			}()
 		case r := <-c.Rows:
 			// TODO:
 			go func() {
-				fmt.Println(c.putObtKvo(r))
+				if e := c.putObtKvo(r); e != nil {
+					log.Println(e)
+				}
 			}()
 		}
 	}

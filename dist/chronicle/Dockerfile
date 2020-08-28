@@ -1,4 +1,5 @@
 # This is VERY large, and takes a long time to build.
+# If the build container has less than 3GB RAM, it will likely fail.
 
 FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND noninteractive
@@ -26,7 +27,7 @@ RUN mkdir build && \
    mkdir build && \
    cd build && \
    cmake .. && \
-   make -j8 && \
+   make -j$(( $(nproc) / 2 + 1 )) && \
    make install
 
 COPY entrypoint.sh /usr/local/bin/

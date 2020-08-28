@@ -1,5 +1,9 @@
 #!/bin/sh
 
+echo "Sleeping to allow services to start"
+sleep 5
+echo "Standby, attempting to start chronicle."
+
 prep_term()
 {
     unset term_child_pid

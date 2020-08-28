@@ -43,13 +43,15 @@ type Consumer struct {
 	mux  deadlock.Mutex
 	wg   sync.WaitGroup
 
-	ctx       context.Context
-	cancel    func()
-	errs      chan error
-	miscChan  chan []byte
-	blockChan chan []byte
-	txChan    chan []byte
-	rowChan   chan []byte
+	ctx            context.Context
+	cancel         func()
+	errs           chan error
+	miscChan       chan []byte
+	blockChan      chan []byte
+	txChan         chan []byte
+	rowChan        chan []byte
+	graphRowChan   chan []byte
+	graphTraceChan chan []byte
 }
 
 func NewConsumer(file string) *Consumer {
@@ -84,6 +86,8 @@ func NewConsumer(file string) *Consumer {
 	consumer.rowChan = make(chan []byte, 1)
 	consumer.miscChan = make(chan []byte, 1)
 	consumer.blockChan = make(chan []byte, 1)
+	consumer.graphRowChan = make(chan []byte) // not buffering redisgraph channels, should have good concurrency
+	consumer.graphTraceChan = make(chan []byte)
 	consumer.fileName = file
 	return consumer
 }
@@ -140,10 +144,8 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fg := &fiograph.Client{}
-	fgRowChan := make(chan []byte)
-	fgTraceChan := make(chan []byte)
 	if sendGraph {
-		fg = fiograph.NewClient(fgTraceChan, fgRowChan)
+		fg = fiograph.NewClient(c.graphTraceChan, c.graphRowChan)
 		c := fg.Pool.Get()
 		_, err = c.Do("PING")
 		if err != nil {
@@ -151,6 +153,7 @@ func (c *Consumer) Handler(w http.ResponseWriter, r *http.Request) {
 			panicked()
 		}
 		c.Close()
+		go fg.Run(pCtx)
 	}
 
 	go func() {
@@ -259,11 +262,16 @@ func (c *Consumer) consume() error {
 				go func(d []byte) {
 					counterChan <- 1
 					defer wgDone()
+					// FIXME: don't use a json.RawMessage here, it significantly increases the graph routine's work
 					a, e := transform.Table(d)
 					if e != nil {
 						elog.Println("process row:", e)
 						counterChan <- -1
 						return
+					}
+					// is this going to create a resource leak? may need to deref and pass a copy
+					if sendGraph {
+						c.graphRowChan <- a
 					}
 					c.rowChan <- a
 					counterChan <- -1
@@ -320,10 +328,14 @@ func (c *Consumer) consume() error {
 				go func(data []byte) {
 					counterChan <- 1
 					defer wgDone()
+					// FIXME: don't use a json.RawMessage here, it significantly increases the graph routine's work
 					a, e := transform.Trace(data)
 					if e != nil || a == nil {
 						counterChan <- -1
 						return
+					}
+					if sendGraph {
+						c.graphTraceChan <- a
 					}
 					c.txChan <- a
 					counterChan <- -1
@@ -354,6 +366,9 @@ func (c *Consumer) consume() error {
 				return
 			case <-t.C:
 				if c.Sent > c.Seen {
+					if c.Seen == 0 {
+						lowestAck = c.Seen + 999
+					}
 					c.Seen = c.Sent
 					err = c.ack()
 					if err != nil {
@@ -417,9 +432,11 @@ func (c *Consumer) save() error {
 	return err
 }
 
+var lowestAck uint32
+
 func (c *Consumer) ack() error {
 	// always return -256 of what has been seen, this is the max number of blocked routines allowed.
-	if c.Seen <= 256 {
+	if c.Seen <= 256 || c.Seen < lowestAck {
 		return nil
 	}
 	return c.ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d", c.Seen-256)))

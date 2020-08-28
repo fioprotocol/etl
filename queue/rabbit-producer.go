@@ -30,7 +30,7 @@ func StartProducer(ctx context.Context, channel string, messages chan []byte, er
 		}
 	}()
 
-	conn, err := amqp.Dial("amqp://guest:guest@rabbit:5672/")
+	conn, err := amqp.Dial(rabbitUrl)
 	if exitOn(err) {
 		return
 	}

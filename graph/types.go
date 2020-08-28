@@ -14,13 +14,14 @@ Presently it only indexes the following actions, though it may be expanded in th
 */
 
 import (
+	"fmt"
 	"github.com/fioprotocol/fio-go"
 	"github.com/fioprotocol/fio-go/eos"
 	"github.com/fioprotocol/fio.etl/transform"
-	"log"
-	"strings"
-
 	rg "github.com/redislabs/redisgraph-go"
+	"log"
+	"strconv"
+	"strings"
 )
 
 // account is used to build our nodes, nodes are limited in what information they can contain, and the only
@@ -31,30 +32,42 @@ type account struct {
 	Pubkey  string
 }
 
+
 // toNode converts an account to a Node
 func (a *account) toNode() *rg.Node {
-	// nothing.
-	if a.Account == "" && a.Pubkey == "" {
-		return nil
-	}
+
+	// if we only have a pubkey, get the hashed account name
 	if a.Account == "" {
+		// gotta have one or the other!
+		if len(a.Pubkey) < 53 {
+			log.Println("invalid pubkey", a.Pubkey)
+			return nil
+		}
+		switch a.Pubkey[:3] {
+		case "FIO", "PUB":
+			break
+		default:
+			log.Println("invalid pub key:", a.Pubkey)
+			return nil
+		}
 		acc, err := fio.ActorFromPub(a.Pubkey)
 		if err != nil {
-			log.Println(err)
+			log.Println(err, a)
 			return nil
 		}
 		a.Account = string(acc)
 	}
 
-	// explicitly set the ID by using the i64 representation of the name
 	id, err := eos.StringToName(a.Account)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
+
 	return &rg.Node{
-		ID:    id,
-		Label: a.Account,
+		Label: "Account",
+		Alias: "_"+a.Account,
+		Properties: map[string]interface{}{"actor":a.Account, "name": strconv.FormatUint(id, 10)},
 	}
 }
 
@@ -67,7 +80,7 @@ type trans struct {
 	Name     string  `json:"name"` // aka "action"
 	BlockNum uint32  `json:"block_num"`
 	BlockId  string  `json:"block_id"`
-	Time     int64   `json:"time"`
+	Time     string  `json:"time"`
 	Amount   float64 `json:"amount,omitempty"`
 	From     party   `json:"from"`
 	To       party   `json:"to"`
@@ -84,10 +97,10 @@ func (t *trans) toEdge(source *rg.Node, destination *rg.Node) *rg.Edge {
 	props["txid"] = t.TxId
 	props["code"] = t.Code
 	props["name"] = t.Name
-	props["block_num"] = t.BlockNum
+	props["block_num"] = strconv.FormatInt(int64(t.BlockNum), 10)
 	props["block_id"] = t.BlockId
 	props["time"] = t.Time
-	props["amount"] = t.Amount
+	props["amount"] = strconv.FormatFloat(t.Amount, 'f', 9, 64)
 
 	// fix pubkey, add account if missing
 	parties := func(p party) (k, a string) {
@@ -108,15 +121,11 @@ func (t *trans) toEdge(source *rg.Node, destination *rg.Node) *rg.Edge {
 		return k, string(acc)
 	}
 
-	from := make(map[string]string)
-	from["pubkey"], from["account"] = parties(t.From)
-	from["fio_address"] = t.From.FioAddress
-	props["from"] = from
+	props["from_pubkey"], props["from_account"] = parties(t.From)
+	props["from_fio_address"] = t.From.FioAddress
 
-	to := make(map[string]string)
-	to["pubkey"], to["account"] = parties(t.To)
-	to["fio_address"] = t.To.FioAddress
-	props["from"] = to
+	props["to_pubkey"], props["to_account"] = parties(t.To)
+	props["to_fio_address"] = t.To.FioAddress
 
 	return rg.EdgeNew(t.Name, source, destination, props)
 }
@@ -126,4 +135,18 @@ type party struct {
 	Account    string // should always be present
 	Pubkey     string
 	FioAddress string
+}
+
+// MergePath builds a query that ensures we don't end up creating new nodes every time we create a path,
+// for some reason redisgraph-go doesn't have an option for doing this, so we avoid using their standard
+// functions for building paths. Seems kinda fundamental, no?
+func MergePath(n1, n2 *rg.Node, edg *rg.Edge) string {
+	if n1 == nil || n2 == nil || edg == nil {
+		return ""
+	}
+	var s string
+	s += fmt.Sprintf("MERGE %s\n", n1.Encode())
+	s += fmt.Sprintf("MERGE %s\n", n2.Encode())
+	s += strings.Replace(fmt.Sprintf("MERGE %s\n", edg.Encode()), `[:`, fmt.Sprintf(`[_%s:`, edg.GetProperty("txid").(string)), 1)
+	return s
 }

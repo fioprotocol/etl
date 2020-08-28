@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fioprotocol/fio-go"
+	"log"
 )
 
 /*
@@ -39,6 +40,7 @@ func (c *Client) putFioAddress(address string, pubkey string) error {
 	defer client.Close()
 	_, err := client.Do("PUT", address, pubkey)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	return nil
