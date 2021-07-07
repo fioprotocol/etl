@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	connected bool
-	stopped   bool
+	connected, stopped bool
+	firstAck  bool = true
 )
 
 type Consumer struct {
@@ -235,6 +235,12 @@ func (c *Consumer) consume() error {
 			}
 			sizes <- uint64(len(d))
 			_ = c.ws.SetReadDeadline(time.Now().Add(time.Minute))
+			bn, _ := strconv.Atoi(s.Data.BlockNum)
+			// don't resend stale data ... this can happen when chronicle is out of sync with fioetl, and
+			// will result in over-writing records in elasticsearch, consuming space until indices are compacted.
+			if uint32(bn) <= c.Seen {
+				continue
+			}
 			switch s.Msgtype {
 			case "ENCODER_ERROR", "RCVR_PAUSE", "FORK":
 				continue
@@ -406,7 +412,13 @@ func (c *Consumer) ack() error {
 	if c.Seen <= 256 {
 		return nil
 	}
-	return c.ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d", c.Seen-256)))
+	seen := c.Seen - 256
+	// prevent chronicle error where first ack is lower than actual, causing a panic.
+	if firstAck {
+		firstAck = false
+		seen += 256
+	}
+	return c.ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d", seen)))
 }
 
 func (c *Consumer) request(start uint32, end uint32) error {
